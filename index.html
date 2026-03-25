@@ -1220,36 +1220,24 @@ Be conservative. Whole numbers only.`;
     }
 
     if (result) {
-      // Parse the JSON from the response (handle markdown code blocks)
-      // Extract JSON from response
-      let jsonStr = result.trim();
-      // Strip code fences if present
-      jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      // If still not starting with {, try to find JSON object
-      if (!jsonStr.startsWith('{')) {
-        const braceStart = jsonStr.indexOf('{');
-        const braceEnd = jsonStr.lastIndexOf('}');
-        if (braceStart >= 0 && braceEnd > braceStart) jsonStr = jsonStr.slice(braceStart, braceEnd + 1);
-      }
-      console.log('Parsing food JSON:', jsonStr.slice(0, 200));
-      try {
-        const parsed = JSON.parse(jsonStr);
+      console.log('Raw AI response:', result);
+      const parsed = extractFoodJSON(result, desc);
+      if (parsed) {
         document.getElementById('foodName').value = parsed.name || desc;
         document.getElementById('foodCals').value = parsed.calories || 0;
         document.getElementById('foodProtein').value = parsed.protein || 0;
         document.getElementById('foodCarbs').value = parsed.carbs || 0;
         document.getElementById('foodFat').value = parsed.fat || 0;
-        document.getElementById('foodAiNote').innerHTML = `<strong>🧠 AI Estimate:</strong> ${parsed.note || 'Review the numbers below and adjust if needed.'}`;
+        const noteHtml = '<strong>\uD83E\uDDE0 AI Estimate:</strong> ' + (parsed.note || 'Review the numbers below and adjust if needed.');
+        document.getElementById('foodAiNote').innerHTML = noteHtml;
         document.getElementById('foodSaveStaple').checked = true;
-      } catch(parseErr) {
-        // Try to extract numbers from non-JSON response
-        console.warn('Could not parse AI response as JSON:', result);
+      } else {
         document.getElementById('foodName').value = desc || 'Meal';
-        document.getElementById('foodAiNote').innerHTML = `<strong>AI response:</strong> ${result.replace(/\n/g, '<br>').slice(0, 300)}<br><br><em>Could not auto-fill — please enter macros manually.</em>`;
+        document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F Could not parse AI response. Please enter macros manually.';
       }
     } else {
       document.getElementById('foodName').value = desc || 'Meal';
-      document.getElementById('foodAiNote').innerHTML = '⚠️ AI estimation failed. Please enter macros manually.';
+      document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F AI estimation failed. Please enter macros manually.';
     }
   } catch(e) {
     console.error('Macro estimation error:', e);
