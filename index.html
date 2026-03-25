@@ -1320,10 +1320,26 @@ CURRENT USER CONTEXT:
 
 RULES:
 - Always reference the user's actual data when relevant — don't make up numbers
-- If they share a photo of food, estimate calories and macros, then offer to log it
 - Never give medical advice — you're a fitness/nutrition coach, not a doctor
 - Be encouraging but honest about progress
-- When discussing calories, reference the adjusted goal (base + workout burn) to maintain deficit`;
+- When discussing calories, reference the adjusted goal (base + workout burn) to maintain deficit
+
+ACTIONS — You can LOG data directly by including JSON action blocks in your response:
+
+When the user asks you to log food, a workout, or weight — or when they share a photo and ask you to log it — include an action block in your response using this exact format:
+
+For food: <!--ACTION:{"type":"food","meal":"Breakfast|Lunch|Dinner|Snack","name":"Food name","cals":000,"protein":00,"carbs":00,"fat":00}-->
+For workout: <!--ACTION:{"type":"workout","workoutType":"Running|Cycling|Swimming|Weight Training|HIIT|Yoga|Walking|Other","duration":00,"distance":"","effort":"Easy|Moderate|Hard|Max","notes":""}-->
+For weight: <!--ACTION:{"type":"weight","weight":000.0,"note":""}-->
+
+IMPORTANT ACTION RULES:
+- When the user shares a photo of food, analyze it, give your estimates, AND log it automatically with an ACTION block. Don't just offer — do it.
+- When a user says "log that" or "add that" after discussing food, include the ACTION block.
+- When a user shares a workout screenshot, parse the details and log it with an ACTION block.
+- You can include multiple ACTION blocks in one response (e.g., logging multiple food items).
+- Always tell the user what you logged in your conversational response.
+- The ACTION blocks are invisible to the user — they only see your text. So always describe what you're logging.
+- If you're uncertain about values, make your best estimate and tell the user they can adjust it.`;
 }
 
 async function callCoachAPI(userText, imageData) {
@@ -1419,10 +1435,81 @@ async function sendMessage() {
   document.getElementById('chatMessages').appendChild(typingEl);
   typingEl.scrollIntoView({ behavior: 'smooth' });
 
-  const reply = await callCoachAPI(text, imageData);
+  const rawReply = await callCoachAPI(text, imageData);
   isCoachTyping = false;
-  chatHistory.push({ role: 'coach', text: reply });
-  save(); renderChat();
+
+  // Parse and execute any action blocks
+  const actions = parseActions(rawReply);
+  const displayText = rawReply.replace(/<!--ACTION:.*?-->/g, '').trim();
+  const actionsExecuted = executeActions(actions);
+
+  // Show what was logged
+  let finalText = displayText;
+  if (actionsExecuted.length > 0) {
+    finalText += '<br><div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:8px;font-size:0.8rem;">';
+    finalText += '<strong style="color:#22c55e;">✓ Logged:</strong> ' + actionsExecuted.join(' · ');
+    finalText += '</div>';
+  }
+
+  chatHistory.push({ role: 'coach', text: finalText });
+  save(); renderAll();
+}
+
+function parseActions(text) {
+  const actions = [];
+  const regex = /<!--ACTION:(.*?)-->/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    try { actions.push(JSON.parse(match[1])); }
+    catch (e) { console.warn('Failed to parse action:', match[1]); }
+  }
+  return actions;
+}
+
+function executeActions(actions) {
+  const executed = [];
+  actions.forEach(a => {
+    try {
+      if (a.type === 'food') {
+        const entry = {
+          id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+          date: today(), meal: a.meal || guessNextMeal(),
+          name: a.name || 'Unnamed', desc: '',
+          cals: parseInt(a.cals) || 0,
+          protein: parseInt(a.protein) || 0,
+          carbs: parseInt(a.carbs) || 0,
+          fat: parseInt(a.fat) || 0,
+        };
+        meals.push(entry);
+        executed.push(`${entry.name} (${entry.cals} cal)`);
+      } else if (a.type === 'workout') {
+        const dur = parseInt(a.duration) || 0;
+        if (dur > 0) {
+          const type = a.workoutType || 'Other';
+          const effort = a.effort || 'Moderate';
+          const entry = {
+            id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+            date: today(), type,
+            duration: dur, distance: a.distance || '',
+            effort, notes: a.notes || '',
+            calsBurned: estimateCalBurn(type, dur, effort)
+          };
+          workouts.push(entry);
+          executed.push(`${type} ${dur}min (${entry.calsBurned} cal burned)`);
+        }
+      } else if (a.type === 'weight') {
+        const w = parseFloat(a.weight);
+        if (w) {
+          const existing = weights.findIndex(e => e.date === today());
+          if (existing >= 0) weights[existing] = { date: today(), weight: w, note: a.note || '' };
+          else weights.push({ date: today(), weight: w, note: a.note || '' });
+          executed.push(`Weight: ${w} lbs`);
+        }
+      }
+    } catch (e) { console.warn('Action execution failed:', e); }
+  });
+  if (executed.length) save();
+  return executed;
 }
 
 document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
