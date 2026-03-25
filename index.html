@@ -1344,72 +1344,131 @@ IMPORTANT ACTION RULES:
 
 async function callCoachAPI(userText, imageData) {
   const apiKey = settings.geminiApiKey;
-  if (!apiKey) return getFallbackResponse(userText);
+  if (!apiKey) return getFallbackResponse(userText, false);
 
   try {
-    // Build Gemini conversation contents
+    // Build Gemini conversation contents — must alternate user/model and START with user
     const contents = [];
-
-    // Add conversation history (last 10 messages)
     const recentChat = chatHistory.slice(-10);
+
+    // Filter and fix role alternation: Gemini requires user/model alternation starting with user
+    let lastRole = null;
     recentChat.forEach(m => {
+      const geminiRole = m.role === 'coach' ? 'model' : 'user';
+      // Skip if same role as previous (merge or skip to maintain alternation)
+      if (geminiRole === lastRole) return;
       const parts = [];
       if (m.role === 'user' && m.image) {
-        const base64 = m.image.split(',')[1];
-        const mimeType = m.image.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
-        parts.push({ inlineData: { mimeType, data: base64 } });
+        try {
+          const base64 = m.image.split(',')[1];
+          const mimeType = m.image.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+          if (base64 && base64.length < 500000) { // Skip very large images from history
+            parts.push({ inlineData: { mimeType, data: base64 } });
+          }
+        } catch(e) {}
       }
-      const text = (m.text || '').replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '');
+      const text = (m.text || '').replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '').replace(/<!--ACTION:.*?-->/g, '').trim();
       if (text) parts.push({ text });
-      if (parts.length) contents.push({ role: m.role === 'coach' ? 'model' : 'user', parts });
+      if (parts.length) {
+        contents.push({ role: geminiRole, parts });
+        lastRole = geminiRole;
+      }
     });
 
-    // Add current message
+    // Ensure conversation starts with user — remove leading model messages
+    while (contents.length > 0 && contents[0].role === 'model') contents.shift();
+
+    // Add current user message
     const currentParts = [];
     if (imageData) {
-      const base64 = imageData.split(',')[1];
-      const mimeType = imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
-      currentParts.push({ inlineData: { mimeType, data: base64 } });
+      try {
+        const base64 = imageData.split(',')[1];
+        const mimeType = imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+        currentParts.push({ inlineData: { mimeType, data: base64 } });
+      } catch(e) {}
     }
     currentParts.push({ text: userText || 'What do you think of this meal?' });
+
+    // If last message in contents is also 'user', merge or remove it
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+      contents.pop();
+    }
     contents.push({ role: 'user', parts: currentParts });
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
-        contents,
-        generationConfig: { maxOutputTokens: 600, temperature: 0.8 }
-      })
-    });
+    // Try multiple model names in case one isn't available
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    let lastError = null;
 
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      console.error('Gemini API error:', err);
-      if (resp.status === 400 || resp.status === 403) return 'Your API key doesn\'t seem to be working. Double-check it in Settings → Integrations → AI Coach.';
-      return getFallbackResponse(userText);
+    for (const model of models) {
+      try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
+            contents,
+            generationConfig: { maxOutputTokens: 800, temperature: 0.85 }
+          })
+        });
+
+        if (resp.status === 404) {
+          console.warn(`Model ${model} not found, trying next...`);
+          continue; // Try next model
+        }
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          console.error(`Gemini API error (${model}):`, resp.status, err);
+          lastError = err;
+          if (resp.status === 400) {
+            const errMsg = JSON.stringify(err);
+            if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('PERMISSION_DENIED')) {
+              return '⚠️ Your API key doesn\'t seem to be working. Double-check it in Settings → Integrations.\n\nGet a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com/apikey</a>';
+            }
+            continue; // Try next model for other 400 errors
+          }
+          if (resp.status === 403) return '⚠️ API key permission error. Make sure your key has access to the Gemini API. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com/apikey</a>';
+          if (resp.status === 429) return '⏳ Rate limit hit — the free tier has limits. Wait a moment and try again.';
+          continue;
+        }
+
+        const data = await resp.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!reply) {
+          console.error('Empty Gemini response:', data);
+          // Check for safety block
+          if (data.candidates?.[0]?.finishReason === 'SAFETY') return 'I can\'t respond to that — let\'s keep things focused on your nutrition and fitness goals. What can I help with?';
+          continue;
+        }
+        console.log(`✅ Gemini response via ${model}`);
+        return reply.replace(/\n/g, '<br>');
+      } catch (fetchErr) {
+        console.error(`Fetch error for ${model}:`, fetchErr);
+        lastError = fetchErr;
+        continue;
+      }
     }
 
-    const data = await resp.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || getFallbackResponse(userText);
-    return reply.replace(/\n/g, '<br>');
+    // All models failed
+    console.error('All Gemini models failed. Last error:', lastError);
+    return '⚠️ AI coach couldn\'t connect. Check your internet connection and API key. <br><br>' + getFallbackResponse(userText, true);
   } catch (e) {
     console.error('Gemini API call failed:', e);
-    return getFallbackResponse(userText);
+    return '⚠️ Something went wrong connecting to the AI. <br><br>' + getFallbackResponse(userText, true);
   }
 }
 
-function getFallbackResponse(text) {
+function getFallbackResponse(text, hasKey) {
   const t = todayTotals(); const burn = todayBurn();
   const goal = adjustedCalorieGoal();
   const remaining = Math.max(0, goal - t.cals);
   const lower = (text || '').toLowerCase();
+  const keyHint = hasKey ? '' : '<br><br><em style="font-size:0.78rem;color:var(--text-muted);">Add your free Gemini API key in Settings → Integrations for real AI coaching.</em>';
   if (lower.includes('protein') || lower.includes('macro'))
-    return `You're at ${t.protein}g protein out of ${settings.proteinGoal}g. ${t.protein < settings.proteinGoal*0.7 ? 'Try to get more protein at your next meal — chicken, fish, or a shake would help.' : 'Looking good on protein!'}`;
+    return `You're at ${t.protein}g protein out of ${settings.proteinGoal}g. ${t.protein < settings.proteinGoal*0.7 ? 'Try to get more protein at your next meal — chicken, fish, or a shake would help.' : 'Looking good on protein!'}${keyHint}`;
   if (lower.includes('hungry') || lower.includes('snack'))
-    return `You've got ${remaining} calories left. Some solid snack options: turkey roll-ups (~80 cal, 12g P), string cheese (~80 cal, 7g P), or hard-boiled eggs (~70 cal, 6g P).`;
-  return `You've eaten ${t.cals} of ${goal} calories today (${remaining} remaining). ${t.protein}g of ${settings.proteinGoal}g protein.${burn > 0 ? ' Your goal was adjusted for the '+burn+' calories you burned.' : ''}<br><br><em style="font-size:0.78rem;color:var(--text-muted);">Add your free Gemini API key in Settings → Integrations for real AI coaching.</em>`;
+    return `You've got ${remaining} calories left. Some solid snack options: turkey roll-ups (~80 cal, 12g P), string cheese (~80 cal, 7g P), or hard-boiled eggs (~70 cal, 6g P).${keyHint}`;
+  return `You've eaten ${t.cals} of ${goal} calories today (${remaining} remaining). ${t.protein}g of ${settings.proteinGoal}g protein.${burn > 0 ? ' Your goal was adjusted for the '+burn+' calories you burned.' : ''}${keyHint}`;
 }
 
 async function sendMessage() {
