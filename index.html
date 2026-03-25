@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -339,7 +340,49 @@
       .header { max-width: 480px; left: 50%; transform: translateX(-50%); border-radius: 0 0 20px 20px; }
       .modal { border-radius: var(--radius); margin-bottom: 20px; }
       .modal-overlay { align-items: center; }
+      .login-screen, .onboarding { max-width: 480px; margin: 0 auto; }
     }
+    /* Login Screen */
+    .login-screen { display:none; min-height:100dvh; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; text-align:center; }
+    .login-screen.active { display:flex; }
+    .login-logo { font-size:2.5rem; font-weight:800; background:linear-gradient(135deg,var(--accent),var(--accent-light)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px; }
+    .login-tagline { font-size:1rem; color:var(--text-secondary); margin-bottom:40px; line-height:1.5; }
+    .login-gsi-wrap { margin-bottom:20px; }
+    .login-footer { font-size:0.72rem; color:var(--text-muted); margin-top:24px; line-height:1.6; }
+    /* Onboarding */
+    .onboarding { display:none; min-height:100dvh; }
+    .onboarding.active { display:block; }
+    .ob-progress { height:4px; background:var(--bg-secondary); position:fixed; top:0; left:0; right:0; z-index:150; }
+    .ob-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-light)); transition:width 0.4s ease; border-radius:0 2px 2px 0; }
+    .ob-step { display:none; padding:24px 20px; min-height:100dvh; flex-direction:column; animation:fadeIn 0.3s ease; }
+    .ob-step.active { display:flex; }
+    .ob-header { text-align:center; margin-bottom:24px; padding-top:24px; }
+    .ob-step-num { font-size:0.72rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+    .ob-title { font-size:1.5rem; font-weight:800; margin-bottom:6px; }
+    .ob-subtitle { font-size:0.88rem; color:var(--text-secondary); line-height:1.5; }
+    .ob-content { flex:1; }
+    .ob-footer { padding:16px 0 calc(16px + var(--safe-bottom)); }
+    .ob-footer .btn { width:100%; }
+    .ob-back { background:none; border:none; color:var(--text-muted); font-family:inherit; font-size:0.85rem; cursor:pointer; padding:12px; text-align:center; width:100%; }
+    .ob-back:hover { color:var(--text-secondary); }
+    .ob-option-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+    .ob-option-card { padding:14px; background:var(--bg-card); border-radius:var(--radius-sm); border:2px solid var(--border); cursor:pointer; transition:border-color 0.2s, background 0.2s; text-align:center; }
+    .ob-option-card.selected { border-color:var(--accent); background:var(--accent-glow); }
+    .ob-option-card:active { transform:scale(0.98); }
+    .ob-option-card .ob-opt-label { font-weight:600; font-size:0.9rem; }
+    .ob-option-card .ob-opt-desc { font-size:0.72rem; color:var(--text-secondary); margin-top:2px; }
+    .ob-chip-group { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .ob-chip { padding:8px 16px; border-radius:20px; background:var(--bg-card); border:1.5px solid var(--border); font-size:0.85rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+    .ob-chip.selected { border-color:var(--accent); background:var(--accent-glow); color:var(--accent); }
+    .ob-persona-card { padding:16px; background:var(--bg-card); border-radius:var(--radius); border:2px solid var(--border); cursor:pointer; transition:all 0.2s; margin-bottom:12px; }
+    .ob-persona-card.selected { border-color:var(--accent); }
+    .ob-persona-card:active { transform:scale(0.98); }
+    .ob-toggle-row { display:flex; justify-content:space-between; align-items:center; padding:14px; background:var(--bg-secondary); border-radius:var(--radius-xs); margin-bottom:8px; }
+    .ob-toggle-label { font-size:0.88rem; font-weight:500; }
+    .ob-toggle-desc { font-size:0.72rem; color:var(--text-secondary); margin-top:2px; }
+    .ob-error { color:var(--danger); font-size:0.78rem; margin-top:4px; display:none; }
+    .ob-error.visible { display:block; }
+    .ob-skip { background:none; border:none; color:var(--text-muted); font-family:inherit; font-size:0.85rem; cursor:pointer; padding:12px; text-align:center; width:100%; text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -349,6 +392,271 @@
   <div class="header-date" id="headerDate"></div>
   <div class="header-avatar" onclick="switchScreen('settings')" id="avatarInitials">AH</div>
 </header>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-logo">HeatFit</div>
+  <div class="login-tagline">Track macros, weight, and workouts.<br>AI-powered coaching to reach your goals.</div>
+  <div class="login-gsi-wrap" id="gsiButtonWrap"></div>
+  <div class="login-footer">By signing in, you agree to use HeatFit at your own discretion.<br>HeatFit is not a medical professional.</div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding" class="onboarding">
+  <div class="ob-progress"><div class="ob-progress-fill" id="obProgressFill" style="width:14.3%"></div></div>
+
+  <!-- Step 1: Profile & Biometrics -->
+  <div class="ob-step" id="obStep1">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 1 of 7</div>
+      <div class="ob-title">Your Profile</div>
+      <div class="ob-subtitle">Let's get the basics so we can calculate your targets.</div>
+    </div>
+    <div class="ob-content">
+      <div class="form-group">
+        <label class="form-label">Units</label>
+        <div class="ob-option-grid">
+          <div class="ob-option-card selected" onclick="obSelectOption(this,'obUnits','imperial')"><div class="ob-opt-label">Imperial</div><div class="ob-opt-desc">lbs, ft/in</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obUnits','metric')"><div class="ob-opt-label">Metric</div><div class="ob-opt-desc">kg, cm</div></div>
+        </div>
+        <input type="hidden" id="obUnits" value="imperial" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Height</label>
+        <input type="text" class="form-input" id="obHeight" placeholder="e.g. 5'11 or 180cm" />
+        <div class="ob-error" id="obHeightErr">Please enter your height</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Current Weight <span id="obWeightUnitLabel">(lbs)</span></label>
+          <input type="number" class="form-input" id="obWeight" placeholder="185" step="0.1" />
+          <div class="ob-error" id="obWeightErr">Please enter your weight</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Goal Weight (optional)</label>
+          <input type="number" class="form-input" id="obGoalWeight" placeholder="175" step="0.1" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sex</label>
+        <div class="ob-option-grid">
+          <div class="ob-option-card selected" onclick="obSelectOption(this,'obSex','Male')"><div class="ob-opt-label">Male</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obSex','Female')"><div class="ob-opt-label">Female</div></div>
+        </div>
+        <input type="hidden" id="obSex" value="Male" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Age</label>
+        <input type="number" class="form-input" id="obAge" placeholder="30" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Activity Level (outside exercise)</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="ob-option-card" onclick="obSelectOption(this,'obActivity','Sedentary')" style="text-align:left;"><div class="ob-opt-label">Sedentary</div><div class="ob-opt-desc">Desk job, minimal movement</div></div>
+          <div class="ob-option-card selected" onclick="obSelectOption(this,'obActivity','Lightly Active')" style="text-align:left;"><div class="ob-opt-label">Lightly Active</div><div class="ob-opt-desc">On feet part of the day</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obActivity','Moderately Active')" style="text-align:left;"><div class="ob-opt-label">Moderately Active</div><div class="ob-opt-desc">Physically active job or lifestyle</div></div>
+        </div>
+        <input type="hidden" id="obActivity" value="Lightly Active" />
+      </div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Goals -->
+  <div class="ob-step" id="obStep2">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 2 of 7</div>
+      <div class="ob-title">Your Goals</div>
+      <div class="ob-subtitle">What are you working toward?</div>
+    </div>
+    <div class="ob-content">
+      <div class="form-group">
+        <label class="form-label">Primary Goal</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="ob-option-card selected" onclick="obSelectOption(this,'obGoal','Lose Weight');obToggleRate();" style="text-align:left;"><div class="ob-opt-label">Lose Weight</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obGoal','Maintain Weight');obToggleRate();" style="text-align:left;"><div class="ob-opt-label">Maintain Weight</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obGoal','Gain Weight');obToggleRate();" style="text-align:left;"><div class="ob-opt-label">Gain Weight / Muscle</div></div>
+        </div>
+        <input type="hidden" id="obGoal" value="Lose Weight" />
+      </div>
+      <div id="obRateSection">
+        <label class="form-label">Target Rate</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="ob-option-card" onclick="obSelectOption(this,'obRate','0.5')" style="text-align:left;"><div class="ob-opt-label">0.5 lbs/week</div><div class="ob-opt-desc">Moderate &mdash; sustainable and recommended</div></div>
+          <div class="ob-option-card selected" onclick="obSelectOption(this,'obRate','1.0')" style="text-align:left;"><div class="ob-opt-label">1.0 lb/week</div><div class="ob-opt-desc">Aggressive &mdash; noticeable deficit</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obRate','1.5')" style="text-align:left;"><div class="ob-opt-label">1.5 lbs/week</div><div class="ob-opt-desc">Very aggressive &mdash; hard to sustain</div></div>
+          <div class="ob-option-card" onclick="obSelectOption(this,'obRate','2.0')" style="text-align:left;"><div class="ob-opt-label">2.0 lbs/week</div><div class="ob-opt-desc">Maximum &mdash; only for significant weight loss</div></div>
+        </div>
+        <input type="hidden" id="obRate" value="1.0" />
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">Secondary Goals (select all that apply)</label>
+        <div class="ob-chip-group" id="obSecondaryGoals">
+          <div class="ob-chip" onclick="this.classList.toggle('selected')">Build Strength</div>
+          <div class="ob-chip" onclick="this.classList.toggle('selected')">Improve Endurance</div>
+          <div class="ob-chip" onclick="this.classList.toggle('selected')">General Health</div>
+          <div class="ob-chip" onclick="this.classList.toggle('selected')">Body Recomposition</div>
+        </div>
+      </div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Strava -->
+  <div class="ob-step" id="obStep3">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 3 of 7</div>
+      <div class="ob-title">Connect Strava</div>
+      <div class="ob-subtitle">Automatically import workouts and calorie burn data.</div>
+    </div>
+    <div class="ob-content" style="display:flex;flex-direction:column;align-items:center;padding-top:20px;">
+      <div style="width:64px;height:64px;border-radius:16px;background:#fc4c02;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+      </div>
+      <p style="color:var(--text-secondary);font-size:0.88rem;text-align:center;line-height:1.6;margin-bottom:24px;">Connect your Strava account to automatically pull runs, rides, and workout data into HeatFit.</p>
+      <button class="btn btn-primary" style="background:#fc4c02;width:100%;max-width:300px;" onclick="obConnectStrava()">Connect to Strava</button>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;">You can also connect later in Settings.</div>
+      <input type="hidden" id="obStrava" value="false" />
+    </div>
+    <div class="ob-footer">
+      <button class="ob-skip" onclick="obNext()">Skip for now</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 4: AI Coach Persona -->
+  <div class="ob-step" id="obStep4">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 4 of 7</div>
+      <div class="ob-title">Choose Your Coach</div>
+      <div class="ob-subtitle">Pick the coaching style that motivates you most.</div>
+    </div>
+    <div class="ob-content">
+      <div class="ob-persona-card" onclick="obSelectPersona(this,'Jillian')">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">&#128293;</div>
+          <div><div style="font-weight:700;font-size:0.95rem;color:var(--jillian-color)">Jillian</div><div style="font-size:0.75rem;color:var(--text-secondary);">Direct & No-Nonsense</div></div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Tough-love coach who pushes you hard. Calls out excuses, celebrates wins with intensity. Best for those who thrive under pressure.</div>
+      </div>
+      <div class="ob-persona-card selected" onclick="obSelectPersona(this,'Michael')">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">&#9878;&#65039;</div>
+          <div><div style="font-weight:700;font-size:0.95rem;color:var(--michael-color)">Michael</div><div style="font-size:0.75rem;color:var(--text-secondary);">Balanced & Real</div></div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Grounded, evidence-based coach. Practical advice without sugar-coating or yelling. Best for sustainable, no-drama guidance.</div>
+      </div>
+      <div class="ob-persona-card" onclick="obSelectPersona(this,'Tiara')">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(168,85,247,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">&#128156;</div>
+          <div><div style="font-weight:700;font-size:0.95rem;color:var(--tiara-color)">Tiara</div><div style="font-size:0.75rem;color:var(--text-secondary);">Warm & Supportive</div></div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Encouraging coach focused on wellbeing, not just numbers. Celebrates small wins and builds a healthy relationship with food and fitness.</div>
+      </div>
+      <input type="hidden" id="obPersona" value="Michael" />
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Communication Preferences -->
+  <div class="ob-step" id="obStep5">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 5 of 7</div>
+      <div class="ob-title">Communication Style</div>
+      <div class="ob-subtitle">How should your coach talk to you?</div>
+    </div>
+    <div class="ob-content">
+      <div class="form-group">
+        <label class="form-label">Response Length</label>
+        <div class="ob-chip-group">
+          <div class="ob-chip" onclick="obSelectChip(this,'obRespLen','Short')">Short</div>
+          <div class="ob-chip selected" onclick="obSelectChip(this,'obRespLen','Medium')">Medium</div>
+          <div class="ob-chip" onclick="obSelectChip(this,'obRespLen','Long')">Long</div>
+        </div>
+        <input type="hidden" id="obRespLen" value="Medium" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji Use</label>
+        <div class="ob-chip-group">
+          <div class="ob-chip" onclick="obSelectChip(this,'obEmoji','None')">None</div>
+          <div class="ob-chip selected" onclick="obSelectChip(this,'obEmoji','A Few')">A Few</div>
+          <div class="ob-chip" onclick="obSelectChip(this,'obEmoji','Lots')">Lots</div>
+        </div>
+        <input type="hidden" id="obEmoji" value="A Few" />
+      </div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 6: Timezone & Meal Windows -->
+  <div class="ob-step" id="obStep6">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 6 of 7</div>
+      <div class="ob-title">Schedule</div>
+      <div class="ob-subtitle">Help us time reminders and organize your day.</div>
+    </div>
+    <div class="ob-content">
+      <div class="form-group">
+        <label class="form-label">Timezone</label>
+        <input type="text" class="form-input" id="obTimezone" readonly style="color:var(--text-secondary);" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Typical Meal Windows</label>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Breakfast</span>
+            <select class="form-select" id="obMealBreakfast" style="flex:1;"><option>6:00 AM - 8:00 AM</option><option selected>7:00 AM - 9:00 AM</option><option>8:00 AM - 10:00 AM</option><option>9:00 AM - 11:00 AM</option></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Lunch</span>
+            <select class="form-select" id="obMealLunch" style="flex:1;"><option>11:00 AM - 12:00 PM</option><option selected>12:00 PM - 1:00 PM</option><option>1:00 PM - 2:00 PM</option></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Dinner</span>
+            <select class="form-select" id="obMealDinner" style="flex:1;"><option>5:00 PM - 7:00 PM</option><option selected>6:00 PM - 8:00 PM</option><option>7:00 PM - 9:00 PM</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 7: Notifications -->
+  <div class="ob-step" id="obStep7">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 7 of 7</div>
+      <div class="ob-title">Notifications</div>
+      <div class="ob-subtitle">Choose which email reminders you'd like to receive.</div>
+    </div>
+    <div class="ob-content">
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Morning Check-in</div><div class="ob-toggle-desc">Weight prompt + plan for the day</div></div><div class="toggle-track on" id="obNotifMorning" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Breakfast Reminder</div><div class="ob-toggle-desc">Prompt to log breakfast</div></div><div class="toggle-track on" id="obNotifBreakfast" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Lunch Reminder</div><div class="ob-toggle-desc">Prompt to log lunch</div></div><div class="toggle-track on" id="obNotifLunch" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Dinner Reminder</div><div class="ob-toggle-desc">Prompt to log dinner</div></div><div class="toggle-track on" id="obNotifDinner" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Day Recap</div><div class="ob-toggle-desc">End-of-day summary with coach note</div></div><div class="toggle-track on" id="obNotifRecap" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ob-toggle-row"><div><div class="ob-toggle-label">Weekly Summary</div><div class="ob-toggle-desc">Sunday evening week-in-review</div></div><div class="toggle-track" id="obNotifWeekly" onclick="this.classList.toggle('on')"></div></div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;text-align:center;">Email notifications coming soon. Your preferences will be saved.</div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Finish Setup</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+</div>
 
 <main class="main">
   <!-- DASHBOARD -->
@@ -609,33 +917,78 @@
 </div>
 
 <script>
-// ============ DATA LAYER ============
+// ============ AUTH & DATA LAYER ============
+const GOOGLE_CLIENT_ID = '846564297266-h0gv48r4s5epv1d5hb4k55isoomg4u0s.apps.googleusercontent.com';
 const today = () => new Date().toISOString().slice(0, 10);
 
+// Current user session (not namespaced)
+let currentUser = JSON.parse(localStorage.getItem('hf_currentUser') || 'null');
+
 function loadData(key, fallback) {
-  try { const d = localStorage.getItem('hf_' + key); return d ? JSON.parse(d) : fallback; }
+  if (!currentUser) return fallback;
+  try { const d = localStorage.getItem('hf_' + currentUser.id + '_' + key); return d ? JSON.parse(d) : fallback; }
   catch { return fallback; }
 }
-function saveData(key, val) { localStorage.setItem('hf_' + key, JSON.stringify(val)); }
+function saveData(key, val) {
+  if (!currentUser) return;
+  localStorage.setItem('hf_' + currentUser.id + '_' + key, JSON.stringify(val));
+}
 
-// Default settings
+// Google Sign-In
+function decodeJWT(token) {
+  try { const b = token.split('.')[1]; return JSON.parse(atob(b.replace(/-/g,'+').replace(/_/g,'/'))); }
+  catch { return null; }
+}
+function handleCredentialResponse(response) {
+  const payload = decodeJWT(response.credential);
+  if (!payload) return;
+  currentUser = { id: payload.sub, name: payload.name || '', email: payload.email || '', picture: payload.picture || '' };
+  localStorage.setItem('hf_currentUser', JSON.stringify(currentUser));
+  boot();
+}
+function signOut() {
+  currentUser = null;
+  localStorage.removeItem('hf_currentUser');
+  // Reset in-memory state
+  settings = { ...defaultSettings };
+  meals = []; weights = []; workouts = []; staples = []; chatHistory = [];
+  showLogin();
+}
+function initGoogleAuth() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    // GSI not loaded yet, retry
+    setTimeout(initGoogleAuth, 200);
+    return;
+  }
+  google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredentialResponse });
+  google.accounts.id.renderButton(document.getElementById('gsiButtonWrap'), {
+    theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'pill', width: 280
+  });
+}
+
+// Default settings (no hardcoded user data)
 const defaultSettings = {
-  name: 'Alex', units: 'imperial', height: "5'11\"", sex: 'Male',
+  name: '', units: 'imperial', height: '', sex: 'Male',
   activityLevel: 'Lightly Active', primaryGoal: 'Lose Weight',
-  targetRate: '1.0', goalWeight: 175, startWeight: 191,
-  secondaryGoals: ['Strength', 'Endurance'],
+  targetRate: '1.0', goalWeight: null, startWeight: null,
+  secondaryGoals: [],
   persona: 'Michael', responseLength: 'Medium', emojiUse: 'A Few',
   stravaConnected: false, age: 30, manualMacros: false, geminiApiKey: '',
   notifications: { morning: true, breakfast: true, lunch: true, dinner: true, recap: true, weekly: false },
   mealWindows: { breakfast: '7:00 AM - 9:00 AM', lunch: '12:00 PM - 1:00 PM', dinner: '6:00 PM - 8:00 PM' }
 };
 
-let settings = loadData('settings', defaultSettings);
-// Migrate: ensure new fields exist with correct defaults
-if (settings.geminiApiKey === undefined) settings.geminiApiKey = '';
-if (settings.stravaConnected === undefined) settings.stravaConnected = false;
-// Fix strava being true when user never actually connected via OAuth
-if (!localStorage.getItem('hf_stravaAuthed')) settings.stravaConnected = false;
+let settings = { ...defaultSettings };
+function loadUserData() {
+  settings = loadData('settings', { ...defaultSettings });
+  // Set name from Google profile if not set
+  if (!settings.name && currentUser) settings.name = currentUser.name;
+  // Migrate fields
+  if (settings.geminiApiKey === undefined) settings.geminiApiKey = '';
+  if (settings.stravaConnected === undefined) settings.stravaConnected = false;
+  if (settings.notifications === undefined) settings.notifications = defaultSettings.notifications;
+  if (settings.mealWindows === undefined) settings.mealWindows = defaultSettings.mealWindows;
+}
 
 // Dynamic calorie/macro calculation based on user profile
 function calcGoals() {
@@ -671,26 +1024,32 @@ function parseHeight(h) {
   const cm = h.match(/(\d+)\s*cm/); if (cm) return Math.round(parseInt(cm[1]) / 2.54);
   return parseInt(h) || 70;
 }
-// Convenience getters
-Object.defineProperty(settings, 'calorieGoal', { get() { return settings.manualMacros ? (loadData('manualCals',2100)) : calcGoals().calorieGoal; }, configurable: true });
-Object.defineProperty(settings, 'proteinGoal', { get() { return settings.manualMacros ? (loadData('manualProtein',155)) : calcGoals().proteinGoal; }, configurable: true });
-Object.defineProperty(settings, 'carbsGoal', { get() { return settings.manualMacros ? (loadData('manualCarbs',210)) : calcGoals().carbsGoal; }, configurable: true });
-Object.defineProperty(settings, 'fatGoal', { get() { return settings.manualMacros ? (loadData('manualFat',70)) : calcGoals().fatGoal; }, configurable: true });
+let meals = [];
+let weights = [];
+let workouts = [];
+let staples = [];
+let chatHistory = [];
 
-let meals = loadData('meals', []);
-let weights = loadData('weights', []);
-let workouts = loadData('workouts', []);
-let staples = loadData('staples', [
-  { name: 'Chicken & Rice Bowl', cals: 520, protein: 45, carbs: 48, fat: 14, categories: ['Lunch','Dinner'] },
-  { name: 'Protein Shake', cals: 280, protein: 35, carbs: 20, fat: 8, categories: ['Breakfast','Snack'] },
-  { name: 'Greek Yogurt Bowl', cals: 340, protein: 28, carbs: 38, fat: 12, categories: ['Breakfast','Snack'] },
-  { name: 'Salmon & Veggies', cals: 480, protein: 38, carbs: 22, fat: 24, categories: ['Lunch','Dinner'] },
-]);
-// Migrate old staples without categories
-staples.forEach(s => { if (!s.categories) s.categories = ['Breakfast','Lunch','Dinner','Snack']; });
-let chatHistory = loadData('chatHistory', [
-  { role: 'coach', text: "Hey! I'm Coach Michael. Tell me about your meals, workouts, or goals — or snap a photo of what you're eating and I'll estimate the macros." }
-]);
+function loadAllUserData() {
+  loadUserData(); // settings
+  meals = loadData('meals', []);
+  weights = loadData('weights', []);
+  workouts = loadData('workouts', []);
+  staples = loadData('staples', []);
+  staples.forEach(s => { if (!s.categories) s.categories = ['Breakfast','Lunch','Dinner','Snack']; });
+  chatHistory = loadData('chatHistory', [
+    { role: 'coach', text: `Hey! I'm Coach ${settings.persona || 'Michael'}. Tell me about your meals, workouts, or goals — or snap a photo of what you're eating and I'll estimate the macros.` }
+  ]);
+  // Re-attach convenience getters after settings reload
+  setupGoalGetters();
+}
+
+function setupGoalGetters() {
+  Object.defineProperty(settings, 'calorieGoal', { get() { return settings.manualMacros ? (loadData('manualCals',2100)) : calcGoals().calorieGoal; }, configurable: true });
+  Object.defineProperty(settings, 'proteinGoal', { get() { return settings.manualMacros ? (loadData('manualProtein',155)) : calcGoals().proteinGoal; }, configurable: true });
+  Object.defineProperty(settings, 'carbsGoal', { get() { return settings.manualMacros ? (loadData('manualCarbs',210)) : calcGoals().carbsGoal; }, configurable: true });
+  Object.defineProperty(settings, 'fatGoal', { get() { return settings.manualMacros ? (loadData('manualFat',70)) : calcGoals().fatGoal; }, configurable: true });
+}
 
 function save() {
   saveData('settings', settings);
@@ -701,13 +1060,202 @@ function save() {
   saveData('chatHistory', chatHistory);
 }
 
-// Seed some weight data if empty
-if (weights.length === 0) {
-  const seed = [191,190.8,191.2,190.4,190,189.6,189.8,189.2,189.5,189,188.8,188.2,188.6,188,188.4,187.8,188,187.6,187.2,187.8,187.4];
-  const d = new Date(); d.setDate(d.getDate() - seed.length);
-  seed.forEach((w, i) => { const dd = new Date(d); dd.setDate(dd.getDate() + i); weights.push({ date: dd.toISOString().slice(0,10), weight: w, note: '' }); });
-  save();
+// ============ ONBOARDING ============
+let obStep = 1;
+const OB_STEPS = 7;
+
+function obSelectOption(el, hiddenId, value) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.ob-option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById(hiddenId).value = value;
+  // Update unit labels when units change
+  if (hiddenId === 'obUnits') {
+    document.getElementById('obWeightUnitLabel').textContent = value === 'imperial' ? '(lbs)' : '(kg)';
+  }
 }
+
+function obSelectChip(el, hiddenId, value) {
+  el.parentElement.querySelectorAll('.ob-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById(hiddenId).value = value;
+}
+
+function obSelectPersona(el, value) {
+  document.querySelectorAll('.ob-persona-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('obPersona').value = value;
+}
+
+function obToggleRate() {
+  const goal = document.getElementById('obGoal').value;
+  document.getElementById('obRateSection').style.display = goal === 'Maintain Weight' ? 'none' : 'block';
+}
+
+function obConnectStrava() {
+  const mock = confirm('This will redirect to Strava to authorize HeatFit.\n\n(In production, this opens Strava OAuth. For now, click OK to simulate connecting.)');
+  if (mock) {
+    document.getElementById('obStrava').value = 'true';
+    obNext();
+  }
+}
+
+function obValidateStep(step) {
+  // Clear all errors
+  document.querySelectorAll('.ob-error').forEach(e => e.classList.remove('visible'));
+  if (step === 1) {
+    let valid = true;
+    if (!document.getElementById('obHeight').value.trim()) {
+      document.getElementById('obHeightErr').classList.add('visible'); valid = false;
+    }
+    if (!document.getElementById('obWeight').value) {
+      document.getElementById('obWeightErr').classList.add('visible'); valid = false;
+    }
+    return valid;
+  }
+  return true;
+}
+
+function obCollectData() {
+  return {
+    units: document.getElementById('obUnits').value,
+    height: document.getElementById('obHeight').value.trim(),
+    startWeight: parseFloat(document.getElementById('obWeight').value) || null,
+    goalWeight: parseFloat(document.getElementById('obGoalWeight').value) || null,
+    sex: document.getElementById('obSex').value,
+    age: parseInt(document.getElementById('obAge').value) || 30,
+    activityLevel: document.getElementById('obActivity').value,
+    primaryGoal: document.getElementById('obGoal').value,
+    targetRate: document.getElementById('obRate').value,
+    secondaryGoals: [...document.querySelectorAll('#obSecondaryGoals .ob-chip.selected')].map(c => c.textContent.trim()),
+    stravaConnected: document.getElementById('obStrava').value === 'true',
+    persona: document.getElementById('obPersona').value,
+    responseLength: document.getElementById('obRespLen').value,
+    emojiUse: document.getElementById('obEmoji').value,
+    timezone: document.getElementById('obTimezone').value,
+    mealWindows: {
+      breakfast: document.getElementById('obMealBreakfast').value,
+      lunch: document.getElementById('obMealLunch').value,
+      dinner: document.getElementById('obMealDinner').value,
+    },
+    notifications: {
+      morning: document.getElementById('obNotifMorning').classList.contains('on'),
+      breakfast: document.getElementById('obNotifBreakfast').classList.contains('on'),
+      lunch: document.getElementById('obNotifLunch').classList.contains('on'),
+      dinner: document.getElementById('obNotifDinner').classList.contains('on'),
+      recap: document.getElementById('obNotifRecap').classList.contains('on'),
+      weekly: document.getElementById('obNotifWeekly').classList.contains('on'),
+    }
+  };
+}
+
+function obNext() {
+  if (!obValidateStep(obStep)) return;
+  if (obStep >= OB_STEPS) {
+    completeOnboarding();
+    return;
+  }
+  obStep++;
+  renderObStep(obStep);
+}
+
+function obBack() {
+  if (obStep > 1) { obStep--; renderObStep(obStep); }
+}
+
+function renderObStep(step) {
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  const stepEl = document.getElementById('obStep' + step);
+  if (stepEl) stepEl.classList.add('active');
+  document.getElementById('obProgressFill').style.width = (step / OB_STEPS * 100) + '%';
+  // Auto-detect timezone for step 6
+  if (step === 6) {
+    try { document.getElementById('obTimezone').value = Intl.DateTimeFormat().resolvedOptions().timeZone; }
+    catch { document.getElementById('obTimezone').value = 'UTC'; }
+  }
+  // Save progress
+  saveData('onboardingStep', step);
+}
+
+function completeOnboarding() {
+  const data = obCollectData();
+  const finalSettings = {
+    ...defaultSettings,
+    ...data,
+    name: currentUser ? currentUser.name : '',
+    manualMacros: false,
+    geminiApiKey: '',
+  };
+  saveData('settings', finalSettings);
+  saveData('onboarded', true);
+
+  // Seed initial weight
+  if (data.startWeight) {
+    saveData('weights', [{ date: today(), weight: data.startWeight, note: 'Starting weight' }]);
+  }
+
+  // Seed chat with selected persona
+  saveData('chatHistory', [
+    { role: 'coach', text: `Hey${currentUser ? ', ' + currentUser.name.split(' ')[0] : ''}! I'm Coach ${data.persona}. Tell me about your meals, workouts, or goals — or snap a photo of what you're eating and I'll estimate the macros.` }
+  ]);
+
+  if (data.stravaConnected) {
+    localStorage.setItem('hf_' + currentUser.id + '_stravaAuthed', '1');
+  }
+
+  // Load everything and show app
+  loadAllUserData();
+  showApp();
+}
+
+// ============ SCREEN MANAGEMENT ============
+function showLogin() {
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('onboarding').classList.remove('active');
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  document.querySelector('.bottom-nav').style.display = 'none';
+  initGoogleAuth();
+}
+
+function showOnboarding() {
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('onboarding').classList.add('active');
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  document.querySelector('.bottom-nav').style.display = 'none';
+  // Resume from saved step
+  const savedStep = loadData('onboardingStep', 1);
+  obStep = savedStep;
+  renderObStep(obStep);
+}
+
+function showApp() {
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('onboarding').classList.remove('active');
+  document.querySelector('.header').style.display = '';
+  document.querySelector('.main').style.display = '';
+  document.querySelector('.bottom-nav').style.display = '';
+  renderAll();
+}
+
+function boot() {
+  if (!currentUser) {
+    showLogin();
+    return;
+  }
+  // Load user data
+  loadAllUserData();
+  const onboarded = loadData('onboarded', false);
+  if (!onboarded) {
+    showOnboarding();
+  } else {
+    showApp();
+  }
+}
+
+// Start the app
+boot();
 
 // ============ HELPERS ============
 function todayMeals() { return meals.filter(m => m.date === today()); }
@@ -767,7 +1315,12 @@ function renderDashboard() {
   const offset = 314 - (314 * pct);
 
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  document.getElementById('avatarInitials').textContent = settings.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  const avatarEl = document.getElementById('avatarInitials');
+  if (currentUser && currentUser.picture) {
+    avatarEl.innerHTML = `<img src="${currentUser.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" referrerpolicy="no-referrer" />`;
+  } else {
+    avatarEl.textContent = settings.name ? settings.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?';
+  }
 
   // Streak
   const streak = getStreak();
@@ -814,13 +1367,13 @@ function renderDashboard() {
 
   // Weight
   const cw = weights.length ? weights[weights.length-1].weight : '--';
-  const gw = settings.goalWeight;
-  const dist = weights.length ? (cw - gw).toFixed(1) : '--';
+  const gw = settings.goalWeight || cw || 0;
+  const dist = (weights.length && settings.goalWeight) ? (cw - gw).toFixed(1) : '--';
   const weekAgo = weights.length > 7 ? (cw - weights[weights.length-7].weight).toFixed(1) : null;
   document.getElementById('dashWeightCurrent').innerHTML = `${cw} <span style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">${settings.units==='imperial'?'lbs':'kg'}</span>`;
   document.getElementById('dashWeightChange').innerHTML = weekAgo !== null ? `<span class="chip ${parseFloat(weekAgo)<=0?'chip-success':'chip-danger'}">${weekAgo>0?'+':''}${weekAgo} lbs this week</span>` : '';
-  document.getElementById('dashGoalLabel').textContent = `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}`;
-  document.getElementById('dashGoalDist').textContent = `${dist} ${settings.units==='imperial'?'lbs':'kg'} to go`;
+  document.getElementById('dashGoalLabel').textContent = settings.goalWeight ? `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}` : 'No goal set';
+  document.getElementById('dashGoalDist').textContent = (dist !== '--') ? `${dist} ${settings.units==='imperial'?'lbs':'kg'} to go` : '';
 
   // Today workout
   const tw = todayWorkouts();
@@ -890,10 +1443,10 @@ function renderFoodLog() {
 }
 
 function renderWeightScreen() {
-  const cw = weights.length ? weights[weights.length-1].weight : settings.startWeight;
-  const gw = settings.goalWeight;
-  const sw = settings.startWeight;
-  const totalChange = (cw - sw).toFixed(1);
+  const cw = weights.length ? weights[weights.length-1].weight : (settings.startWeight || 0);
+  const gw = settings.goalWeight || cw;
+  const sw = settings.startWeight || cw;
+  const totalChange = sw ? (cw - sw).toFixed(1) : '0.0';
   const prevDay = weights.length > 1 ? weights[weights.length-2].weight : cw;
   const dayChange = (cw - prevDay).toFixed(1);
 
@@ -1043,7 +1596,13 @@ function renderSettings() {
       ${Object.entries({ morning:'Morning Check-in', breakfast:'Breakfast Reminder', lunch:'Lunch Reminder', dinner:'Dinner Reminder', recap:'Day Recap', weekly:'Weekly Summary' }).map(([k,v]) => `
         <div class="settings-row"><span class="settings-row-label">${v}</span><div class="toggle-track ${n[k]?'on':''}" onclick="toggleNotif('${k}',this)"></div></div>`).join('')}
     </div>
-    <button class="btn btn-secondary btn-full" style="color:var(--danger);margin-top:10px;" onclick="if(confirm('Reset all data?')){localStorage.clear();location.reload();}">Reset All Data</button>`;
+    <div class="settings-section">
+      <div class="settings-label">Account</div>
+      <div class="settings-row" style="cursor:default;"><span class="settings-row-label">${currentUser ? currentUser.email : ''}</span><span class="settings-row-value" style="color:var(--success);">Signed in</span></div>
+    </div>
+    <button class="btn btn-secondary btn-full" style="margin-top:10px;" onclick="if(confirm('Re-run the setup wizard? Your data will be kept.')){saveData('onboarded',false);location.reload();}">Re-run Setup Wizard</button>
+    <button class="btn btn-secondary btn-full" style="margin-top:8px;" onclick="signOut()">Sign Out</button>
+    <button class="btn btn-secondary btn-full" style="color:var(--danger);margin-top:8px;" onclick="if(confirm('Reset ALL data for this account? This cannot be undone.')){const uid=currentUser.id;Object.keys(localStorage).filter(k=>k.startsWith('hf_'+uid)).forEach(k=>localStorage.removeItem(k));location.reload();}">Reset All Data</button>`;
 }
 
 function renderChat() {
@@ -1197,32 +1756,58 @@ Be conservative. Whole numbers only.`;
     }
     contents[0].parts.push({ text: prompt });
 
-    // Use 2.0-flash for food estimation (2.5 is a thinking model that adds extra output)
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    // Try multiple models and approaches
+    document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
     let result = null;
+    const attempts = [
+      { model: 'gemini-2.0-flash', config: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } },
+      { model: 'gemini-2.0-flash', config: { maxOutputTokens: 500, temperature: 0.2 } },
+      { model: 'gemini-1.5-flash', config: { maxOutputTokens: 500, temperature: 0.2 } },
+    ];
 
-    for (const model of models) {
+    for (const attempt of attempts) {
       try {
-        document.getElementById('foodEstimateStatus').textContent = `Analyzing your meal...`;
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        console.log('[Food AI] Trying', attempt.model, 'with config', JSON.stringify(attempt.config));
+        const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + attempt.model + ':generateContent?key=' + apiKey, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } })
+          body: JSON.stringify({ contents: contents, generationConfig: attempt.config })
         });
+        console.log('[Food AI]', attempt.model, 'status:', resp.status);
         if (resp.status === 429) {
-          await new Promise(r => setTimeout(r, 2500));
-          const retry = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          console.log('[Food AI] Rate limited, waiting 3s...');
+          await new Promise(function(r) { setTimeout(r, 3000); });
+          const retry = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + attempt.model + ':generateContent?key=' + apiKey, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } })
+            body: JSON.stringify({ contents: contents, generationConfig: attempt.config })
           });
-          if (retry.ok) { const d = await retry.json(); result = d.candidates?.[0]?.content?.parts?.[0]?.text; if (result) break; }
+          console.log('[Food AI] Retry status:', retry.status);
+          if (retry.ok) {
+            const d = await retry.json();
+            result = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
+            if (result) { console.log('[Food AI] Got result on retry'); break; }
+          }
           continue;
         }
-        if (resp.status === 404) continue;
-        if (!resp.ok) continue;
+        if (resp.status === 404 || resp.status === 400) {
+          console.log('[Food AI]', attempt.model, 'not available or bad request, trying next...');
+          const errBody = await resp.text();
+          console.log('[Food AI] Error body:', errBody.slice(0, 300));
+          continue;
+        }
+        if (!resp.ok) {
+          const errBody = await resp.text();
+          console.log('[Food AI] Non-OK response:', resp.status, errBody.slice(0, 300));
+          continue;
+        }
         const data = await resp.json();
-        result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (result) break;
-      } catch(e) { continue; }
+        console.log('[Food AI] Response data:', JSON.stringify(data).slice(0, 500));
+        result = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+        if (result) { console.log('[Food AI] Success with', attempt.model); break; }
+        console.log('[Food AI] No text in response, trying next...');
+      } catch(e) {
+        console.error('[Food AI] Error with', attempt.model, ':', e);
+        continue;
+      }
     }
 
     if (result) {
@@ -1242,13 +1827,14 @@ Be conservative. Whole numbers only.`;
         document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F Could not parse AI response. Please enter macros manually.';
       }
     } else {
+      console.error('[Food AI] All attempts returned null result');
       document.getElementById('foodName').value = desc || 'Meal';
-      document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F AI estimation failed. Please enter macros manually.';
+      document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F AI returned no result. Open browser console (Cmd+Option+J) for details. Enter macros manually.';
     }
   } catch(e) {
-    console.error('Macro estimation error:', e);
+    console.error('[Food AI] Top-level error:', e);
     document.getElementById('foodName').value = desc || 'Meal';
-    document.getElementById('foodAiNote').innerHTML = '⚠️ Something went wrong. Please enter macros manually.';
+    document.getElementById('foodAiNote').innerHTML = '\u26A0\uFE0F Error: ' + (e.message || 'Unknown') + '. Enter macros manually.';
   }
 
   // Show step 3 (review)
@@ -1842,7 +2428,7 @@ function drawWeightChart(canvasId, height) {
 
   const data = weights.slice(-28).map(e => e.weight);
   if (!data.length) return;
-  const gw = settings.goalWeight;
+  const gw = settings.goalWeight || Math.min(...data) - 2;
   const minW = Math.min(gw - 1, Math.min(...data) - 1);
   const maxW = Math.max(...data) + 1;
   const xStep = data.length > 1 ? cw / (data.length - 1) : cw;
@@ -1882,9 +2468,8 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
 });
 
-// Init
-renderAll();
-window.addEventListener('resize', () => { drawWeightChart('weightMiniChart', 160); drawWeightChart('weightChart', 200); });
+// Resize handler (only when app is visible)
+window.addEventListener('resize', () => { if (currentUser && loadData('onboarded', false)) { drawWeightChart('weightMiniChart', 160); drawWeightChart('weightChart', 200); } });
 </script>
 </body>
 </html>
