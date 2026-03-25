@@ -373,9 +373,13 @@
 
   <!-- LOG FOOD -->
   <section id="screen-food" class="screen">
-    <div class="section-header">
-      <div class="section-title">Log Food</div>
-      <div style="font-size:0.8rem;color:var(--text-secondary);" id="foodCalSummary"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="changeFoodDate(-1)" style="padding:8px 12px;">← Prev</button>
+      <div style="text-align:center;">
+        <div class="section-title" id="foodDateLabel" style="font-size:1rem;"></div>
+        <div style="font-size:0.75rem;color:var(--text-secondary);" id="foodCalSummary"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="changeFoodDate(1)" id="foodNextBtn" style="padding:8px 12px;">Next →</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <button class="btn btn-primary" style="flex:1;padding:14px;" onclick="openFoodModal('photo')">
@@ -569,7 +573,7 @@ const defaultSettings = {
   targetRate: '1.0', goalWeight: 175, startWeight: 191,
   secondaryGoals: ['Strength', 'Endurance'],
   persona: 'Michael', responseLength: 'Medium', emojiUse: 'A Few',
-  stravaConnected: true, age: 30, manualMacros: false,
+  stravaConnected: false, age: 30, manualMacros: false, claudeApiKey: '',
   notifications: { morning: true, breakfast: true, lunch: true, dinner: true, recap: true, weekly: false },
   mealWindows: { breakfast: '7:00 AM - 9:00 AM', lunch: '12:00 PM - 1:00 PM', dinner: '6:00 PM - 8:00 PM' }
 };
@@ -789,27 +793,33 @@ function renderDashboard() {
 }
 
 function renderFoodLog() {
-  const t = todayTotals();
-  const adjGoal = adjustedCalorieGoal();
-  const burn = todayBurn();
-  document.getElementById('foodCalSummary').textContent = `${t.cals} / ${adjGoal} kcal${burn > 0 ? ' (adjusted)' : ''}`;
+  const isToday = foodViewDate === today();
+  const viewMeals = meals.filter(m => m.date === foodViewDate);
+  const viewTotals = { cals: viewMeals.reduce((s,m)=>s+m.cals,0), protein: viewMeals.reduce((s,m)=>s+m.protein,0), carbs: viewMeals.reduce((s,m)=>s+m.carbs,0), fat: viewMeals.reduce((s,m)=>s+m.fat,0) };
 
-  // Staples
-  document.getElementById('stapleSection').innerHTML = `
+  // Date label
+  const dateLabel = isToday ? 'Today' : formatDate(foodViewDate);
+  document.getElementById('foodDateLabel').textContent = dateLabel;
+  document.getElementById('foodNextBtn').style.visibility = isToday ? 'hidden' : 'visible';
+
+  const adjGoal = isToday ? adjustedCalorieGoal() : settings.calorieGoal;
+  document.getElementById('foodCalSummary').textContent = `${viewTotals.cals} / ${adjGoal} kcal${isToday && todayBurn() > 0 ? ' (adjusted)' : ''}`;
+
+  // Staples (only show on today)
+  document.getElementById('stapleSection').innerHTML = isToday ? `
     <div class="card-title">Staple Meals</div>
     <div class="staple-grid">${staples.map((s, i) => `
       <div class="staple-card" onclick="quickAddStaple(${i})">
         <div class="staple-name">${s.name}</div>
         <div class="staple-info">${s.cals} kcal · ${s.protein}g P</div>
       </div>`).join('')}
-    </div>`;
+    </div>` : '';
 
-  // Today's meals grouped
-  const tm = todayMeals();
+  // Meals grouped
   const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   let html = '';
   groups.forEach(g => {
-    const items = tm.filter(m => m.meal === g);
+    const items = viewMeals.filter(m => m.meal === g);
     const totalCals = items.reduce((s, m) => s + m.cals, 0);
     html += `<div class="meal-section"><div class="meal-header"><h3>${g}</h3><span class="meal-cals">${items.length ? totalCals + ' kcal' : 'Not logged'}</span></div>`;
     items.forEach(item => {
@@ -853,11 +863,18 @@ function renderWeightScreen() {
     <div class="stat-row"><span class="stat-label">Rate</span><span class="stat-value" style="color:${parseFloat(rate)<=0?'var(--success)':'var(--danger)'}">${rate} lbs/week</span></div>
     <div class="stat-row"><span class="stat-label">Est. Goal Date</span><span class="stat-value">${goalDate}</span></div>`;
 
-  // Recent entries
-  const recent = [...weights].reverse().slice(0, 10);
+  // Recent entries with edit/delete
+  const recent = [...weights].reverse().slice(0, 14);
   let entriesHtml = '<div class="card"><div class="card-title">Recent Entries</div>';
   recent.forEach(w => {
-    entriesHtml += `<div class="stat-row"><span class="stat-label">${formatDate(w.date)}${w.note ? ' — '+w.note : ''}</span><span class="stat-value">${w.weight} lbs</span></div>`;
+    entriesHtml += `<div class="stat-row" style="cursor:pointer;" onclick="editWeightEntry('${w.date}')">
+      <span class="stat-label">${formatDate(w.date)}${w.note ? ' — <em>'+w.note+'</em>' : ''}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="stat-value">${w.weight} lbs</span>
+        <span style="color:var(--text-muted);font-size:0.75rem;">✏️</span>
+        <button onclick="event.stopPropagation();deleteWeightEntry('${w.date}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0 2px;" title="Delete">&times;</button>
+      </div>
+    </div>`;
   });
   entriesHtml += '</div>';
   document.getElementById('weightEntries').innerHTML = entriesHtml;
@@ -935,6 +952,41 @@ function renderSettings() {
       <div class="settings-row" onclick="editSetting('emojiUse')"><span class="settings-row-label">Emoji Use</span><span class="settings-row-value">${s.emojiUse}</span></div>
     </div>
     <div class="settings-section">
+      <div class="settings-label">Integrations</div>
+      <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:#fc4c02;display:flex;align-items:center;justify-content:center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:0.9rem;">Strava</div>
+              <div style="font-size:0.72rem;color:var(--text-secondary);">Auto-import workouts & calorie burn</div>
+            </div>
+          </div>
+          <span style="font-size:0.78rem;font-weight:600;color:${s.stravaConnected?'var(--success)':'var(--text-muted)'};">${s.stravaConnected?'Connected ✓':'Not connected'}</span>
+        </div>
+        <button class="btn ${s.stravaConnected?'btn-secondary':'btn-primary'} btn-sm btn-full" onclick="toggleStrava()">
+          ${s.stravaConnected?'Disconnect Strava':'Connect to Strava'}
+        </button>
+        ${s.stravaConnected?'<div style="font-size:0.72rem;color:var(--text-secondary);text-align:center;">Workouts and calorie burn will auto-sync from Strava</div>':'<div style="font-size:0.72rem;color:var(--text-secondary);text-align:center;">Connect to automatically pull run, ride, and workout data</div>'}
+      </div>
+      <div class="settings-row" style="margin-top:6px;flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:0.9rem;">Claude AI Coach</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);">Powers real AI coaching conversations</div>
+          </div>
+          <span style="font-size:0.78rem;font-weight:600;color:${s.claudeApiKey?'var(--success)':'var(--text-muted)'};">${s.claudeApiKey?'Active ✓':'Not set'}</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-..." value="${s.claudeApiKey||''}" style="flex:1;font-size:0.82rem;" />
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-secondary);">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent);">console.anthropic.com</a></div>
+      </div>
+    </div>
+    <div class="settings-section">
       <div class="settings-label">Notifications</div>
       ${Object.entries({ morning:'Morning Check-in', breakfast:'Breakfast Reminder', lunch:'Lunch Reminder', dinner:'Dinner Reminder', recap:'Day Recap', weekly:'Weekly Summary' }).map(([k,v]) => `
         <div class="settings-row"><span class="settings-row-label">${v}</span><div class="toggle-track ${n[k]?'on':''}" onclick="toggleNotif('${k}',this)"></div></div>`).join('')}
@@ -971,7 +1023,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function saveFood() {
   const name = document.getElementById('foodName').value || document.getElementById('foodDesc').value || 'Unnamed';
   const entry = {
-    id: Date.now().toString(), date: today(), meal: document.getElementById('foodMealType').value,
+    id: Date.now().toString(), date: foodViewDate, meal: document.getElementById('foodMealType').value,
     name, desc: document.getElementById('foodDesc').value,
     cals: parseInt(document.getElementById('foodCals').value) || 0,
     protein: parseInt(document.getElementById('foodProtein').value) || 0,
@@ -1018,6 +1070,34 @@ function logWeight() {
   document.getElementById('weightNote').value = '';
   save(); renderAll();
 }
+
+function editWeightEntry(date) {
+  const entry = weights.find(w => w.date === date);
+  if (!entry) return;
+  document.getElementById('settingsEditTitle').innerHTML = `Edit Weight — ${formatDate(date)} <button class="modal-close" onclick="closeModal('settingsEditModal')">&times;</button>`;
+  document.getElementById('settingsEditBody').innerHTML = `
+    <div class="form-group"><label class="form-label">Weight (${settings.units==='imperial'?'lbs':'kg'})</label><input type="number" class="form-input" id="editWeightVal" value="${entry.weight}" step="0.1" /></div>
+    <div class="form-group"><label class="form-label">Note</label><input type="text" class="form-input" id="editWeightNote" value="${entry.note||''}" placeholder="Optional" /></div>`;
+  currentEditField = '__weight__' + date;
+  document.getElementById('settingsEditModal').classList.add('open');
+}
+function deleteWeightEntry(date) {
+  if (!confirm('Delete weight entry for ' + formatDate(date) + '?')) return;
+  weights = weights.filter(w => w.date !== date);
+  save(); renderAll();
+}
+
+// Food date navigation
+let foodViewDate = today();
+function changeFoodDate(dir) {
+  const d = new Date(foodViewDate + 'T12:00:00');
+  d.setDate(d.getDate() + dir);
+  const ds = d.toISOString().slice(0, 10);
+  if (ds > today()) return;
+  foodViewDate = ds;
+  renderFoodLog();
+}
+function foodDateMeals() { return meals.filter(m => m.date === foodViewDate); }
 
 function openWorkoutModal() {
   const types = ['Running','Cycling','Swimming','Weight Training','HIIT','Yoga','Walking','Other'];
@@ -1119,6 +1199,15 @@ function editSetting(field) {
   document.getElementById('settingsEditModal').classList.add('open');
 }
 function saveSettingsEdit() {
+  if (currentEditField.startsWith('__weight__')) {
+    const date = currentEditField.replace('__weight__', '');
+    const idx = weights.findIndex(w => w.date === date);
+    if (idx >= 0) {
+      weights[idx].weight = parseFloat(document.getElementById('editWeightVal').value);
+      weights[idx].note = document.getElementById('editWeightNote').value;
+    }
+    save(); closeModal('settingsEditModal'); renderAll(); return;
+  }
   let val = document.getElementById('settingsEditVal').value;
   if (['goalWeight','age'].includes(currentEditField)) val = parseFloat(val);
   settings[currentEditField] = val;
@@ -1142,8 +1231,31 @@ function toggleManualMacros() {
   save(); renderAll();
 }
 
+// Strava toggle
+function toggleStrava() {
+  if (settings.stravaConnected) {
+    if (confirm('Disconnect Strava? Workout auto-sync will stop.')) {
+      settings.stravaConnected = false; save(); renderAll();
+    }
+  } else {
+    // In production this would redirect to Strava OAuth
+    // For now simulate the connection flow
+    const mock = confirm('This will redirect to Strava to authorize HeatFit.\n\n(In production, this opens Strava OAuth. For now, click OK to simulate connecting.)');
+    if (mock) { settings.stravaConnected = true; save(); renderAll(); }
+  }
+}
+
+// API Key
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  settings.claudeApiKey = key;
+  save(); renderAll();
+  if (key) alert('Claude API key saved! Your coach is now AI-powered.');
+}
+
 // Chat
 let pendingPhoto = null;
+let isCoachTyping = false;
 function handlePhotoSelect(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -1160,44 +1272,149 @@ function removePhoto() {
   document.getElementById('chatPhotoPreview').classList.remove('visible');
   document.getElementById('chatPhotoInput').value = '';
 }
-function sendMessage() {
+
+function buildSystemPrompt() {
+  const t = todayTotals(); const burn = todayBurn();
+  const goal = adjustedCalorieGoal(); const baseGoal = settings.calorieGoal;
+  const cw = weights.length ? weights[weights.length-1].weight : settings.startWeight;
+  const gw = settings.goalWeight;
+  const recentWeights = weights.slice(-7).map(w => `${w.date}: ${w.weight} lbs`).join(', ');
+  const tw = todayWorkouts();
+  const todayFoods = todayMeals().map(m => `${m.meal}: ${m.name} (${m.cals} cal, ${m.protein}g P, ${m.carbs}g C, ${m.fat}g F)`).join('; ') || 'Nothing logged yet';
+
+  const personaStyles = {
+    Jillian: 'You are Coach Jillian — direct, no-nonsense, tough-love. You push hard, call out excuses, celebrate wins with intensity. Short punchy sentences. You care deeply but show it through high standards.',
+    Michael: 'You are Coach Michael — balanced, grounded, real. Evidence-based advice without sugar-coating or yelling. Practical, conversational, like talking to a knowledgeable friend. Calm but honest.',
+    Tiara: 'You are Coach Tiara — warm, supportive, gentle. You focus on wellbeing beyond just numbers. Celebrate small wins, encourage self-compassion, build a healthy relationship with food and body.'
+  };
+
+  return `${personaStyles[settings.persona] || personaStyles.Michael}
+
+You are an AI nutrition and fitness coach inside the HeatFit app. Be conversational, human, and personable — not robotic. Use ${settings.emojiUse === 'None' ? 'no emojis' : settings.emojiUse === 'Lots' ? 'emojis freely' : 'a few emojis sparingly'}. Keep responses ${settings.responseLength === 'Short' ? 'brief (2-3 sentences max)' : settings.responseLength === 'Long' ? 'detailed and thorough' : 'moderate length (3-5 sentences)'}.
+
+CURRENT USER CONTEXT:
+- Name: ${settings.name}
+- Current weight: ${cw} lbs, Goal: ${gw} lbs (${settings.primaryGoal}, ${settings.targetRate} lbs/week)
+- Recent weights: ${recentWeights}
+- Base calorie goal: ${baseGoal} kcal/day, Adjusted today: ${goal} kcal (${burn > 0 ? burn + ' cal burned from workout' : 'no workout yet'})
+- Today's intake: ${t.cals} cal consumed, ${t.protein}g protein / ${settings.proteinGoal}g goal, ${t.carbs}g carbs / ${settings.carbsGoal}g goal, ${t.fat}g fat / ${settings.fatGoal}g goal
+- Remaining today: ${Math.max(0, goal - t.cals)} calories
+- Today's food: ${todayFoods}
+- Today's workouts: ${tw.length ? tw.map(w => `${w.type} ${w.duration}min ${w.calsBurned} cal burned`).join(', ') : 'None'}
+
+RULES:
+- Always reference the user's actual data when relevant — don't make up numbers
+- If they share a photo of food, estimate calories and macros, then offer to log it
+- Never give medical advice — you're a fitness/nutrition coach, not a doctor
+- Be encouraging but honest about progress
+- When discussing calories, reference the adjusted goal (base + workout burn) to maintain deficit`;
+}
+
+async function callClaudeAPI(userText, imageData) {
+  const apiKey = settings.claudeApiKey;
+  if (!apiKey) return getFallbackResponse(userText);
+
+  try {
+    const messages = [];
+    // Include last 10 messages for context
+    const recentChat = chatHistory.slice(-10);
+    recentChat.forEach(m => {
+      if (m.role === 'coach') {
+        messages.push({ role: 'assistant', content: m.text.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '') });
+      } else {
+        const content = [];
+        if (m.image) {
+          const base64 = m.image.split(',')[1];
+          const mediaType = m.image.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+          content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+        }
+        if (m.text) content.push({ type: 'text', text: m.text });
+        if (content.length) messages.push({ role: 'user', content });
+      }
+    });
+
+    // Add current message
+    const currentContent = [];
+    if (imageData) {
+      const base64 = imageData.split(',')[1];
+      const mediaType = imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+      currentContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+    }
+    currentContent.push({ type: 'text', text: userText || 'What do you think of this meal?' });
+    messages.push({ role: 'user', content: currentContent });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: buildSystemPrompt(),
+        messages
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      console.error('Claude API error:', err);
+      if (resp.status === 401) return 'Hmm, looks like your API key isn\'t working. Check it in Settings → Integrations → Claude AI Coach.';
+      return getFallbackResponse(userText);
+    }
+
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || getFallbackResponse(userText);
+    // Convert newlines to <br> for display
+    return reply.replace(/\n/g, '<br>');
+  } catch (e) {
+    console.error('Claude API call failed:', e);
+    return getFallbackResponse(userText);
+  }
+}
+
+function getFallbackResponse(text) {
+  const t = todayTotals(); const burn = todayBurn();
+  const goal = adjustedCalorieGoal();
+  const remaining = Math.max(0, goal - t.cals);
+  const lower = (text || '').toLowerCase();
+  if (lower.includes('protein') || lower.includes('macro'))
+    return `You're at ${t.protein}g protein out of ${settings.proteinGoal}g. ${t.protein < settings.proteinGoal*0.7 ? 'Try to get more protein at your next meal — chicken, fish, or a shake would help.' : 'Looking good on protein!'}`;
+  if (lower.includes('hungry') || lower.includes('snack'))
+    return `You've got ${remaining} calories left. Some solid snack options: turkey roll-ups (~80 cal, 12g P), string cheese (~80 cal, 7g P), or hard-boiled eggs (~70 cal, 6g P).`;
+  return `You've eaten ${t.cals} of ${goal} calories today (${remaining} remaining). ${t.protein}g of ${settings.proteinGoal}g protein.${burn > 0 ? ' Your goal was adjusted for the '+burn+' calories you burned.' : ''}<br><br><em style="font-size:0.78rem;color:var(--text-muted);">Add your Claude API key in Settings → Integrations for real AI coaching.</em>`;
+}
+
+async function sendMessage() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   const hasPhoto = !!pendingPhoto;
   if (!text && !hasPhoto) return;
+  if (isCoachTyping) return;
 
-  const msg = { role: 'user', text: text || (hasPhoto ? 'What do you think of this meal?' : ''), image: hasPhoto ? pendingPhoto.dataUrl : null };
+  const imageData = hasPhoto ? pendingPhoto.dataUrl : null;
+  const msg = { role: 'user', text: text || (hasPhoto ? 'What do you think of this meal?' : ''), image: imageData };
   chatHistory.push(msg);
   input.value = '';
-  const photoSent = hasPhoto;
   removePhoto();
-
-  setTimeout(() => {
-    const resp = { role: 'coach', text: photoSent ? getPhotoResponse(text) : getCoachResponse(text) };
-    chatHistory.push(resp);
-    save(); renderChat();
-  }, 600);
   save(); renderChat();
-}
 
-function getCoachResponse(text) {
-  const t = todayTotals(); const burn = todayBurn();
-  const goal = adjustedCalorieGoal(); const baseGoal = settings.calorieGoal;
-  const lower = text.toLowerCase();
-  if (lower.includes('protein') || lower.includes('macro'))
-    return `You're at ${t.protein}g of protein — ${Math.round(t.protein/settings.proteinGoal*100)}% of your ${settings.proteinGoal}g target. ${t.protein < settings.proteinGoal*0.7 ? 'Prioritize protein at your next meal. Chicken, fish, or a shake would help close the gap.' : 'Solid progress. One more protein-rich meal and you\'re there.'}`;
-  if (lower.includes('snack') || lower.includes('hungry'))
-    return 'If you\'re hungry, go high-protein and low-cal:<br><br>- Turkey roll-ups with mustard (~80 cal, 12g P)<br>- String cheese (~80 cal, 7g P)<br>- Hard boiled egg (~70 cal, 6g P)<br><br>Keep it light so you have room for a proper meal.';
-  if (lower.includes('week') || lower.includes('plan') || lower.includes('focus'))
-    return `Here's the game plan:<br><br><strong>1. Stay in deficit</strong> — your base target is ${baseGoal} cal/day${burn > 0 ? ', adjusted to '+goal+' with today\'s workout' : ''}.<br><strong>2. Hit protein</strong> — ${settings.proteinGoal}g daily for recovery.<br><strong>3. Stay active</strong> — ${todayWorkouts().length > 0 ? 'Good work today.' : 'Try to get a workout in.'}<br><br>Consistency beats perfection. Keep showing up.`;
-  if (lower.includes('dinner') || lower.includes('eat') || lower.includes('meal'))
-    return `You've got ${Math.max(0, goal - t.cals)} calories remaining${burn > 0 ? ' (goal adjusted for your '+burn+' cal workout)' : ''}. For dinner, aim for a protein-forward meal — grilled chicken, fish, or lean steak with vegetables. Skip heavy sauces and you'll finish the day strong.`;
-  const remaining = goal - t.cals;
-  return `Here's where you stand: ${t.cals} calories consumed${burn > 0 ? ', '+burn+' burned — goal adjusted to '+goal : ''}. You have ${remaining > 0 ? remaining + ' calories left' : 'hit your limit'}. ${t.protein < settings.proteinGoal*0.7 ? 'Focus on protein at your next meal.' : 'Macros are looking solid. Stay the course.'}`;
-}
+  // Show typing indicator
+  isCoachTyping = true;
+  const typingEl = document.createElement('div');
+  typingEl.className = 'chat-msg coach';
+  typingEl.style.cssText = 'color:var(--text-muted);font-style:italic;';
+  typingEl.textContent = 'Coach is thinking...';
+  document.getElementById('chatMessages').appendChild(typingEl);
+  typingEl.scrollIntoView({ behavior: 'smooth' });
 
-function getPhotoResponse() {
-  return `Here's what I'm seeing:<br><br><strong>Identified:</strong> Grilled chicken breast (~6oz), brown rice (~3/4 cup), steamed broccoli with olive oil<br><br><strong>Estimated breakdown:</strong><br>- Calories: ~480 kcal<br>- Protein: 42g<br>- Carbs: 38g<br>- Fat: 16g<br>- Fiber: 5g<br><br>Solid meal — high protein, clean carbs. Want me to log this for you?<br><br><em style="font-size:0.78rem;color:var(--text-muted);">AI estimates may not be exact. Adjust as needed.</em>`;
+  const reply = await callClaudeAPI(text, imageData);
+  isCoachTyping = false;
+  chatHistory.push({ role: 'coach', text: reply });
+  save(); renderChat();
 }
 
 document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
