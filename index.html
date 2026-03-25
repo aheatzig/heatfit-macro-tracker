@@ -1152,12 +1152,12 @@ async function estimateMacros() {
   document.getElementById('foodEstimateBtn').disabled = true;
 
   try {
-    const prompt = `Analyze this meal and estimate its nutritional content. Return your response in EXACTLY this JSON format with no other text:
-{"name":"Short descriptive name for this meal","calories":000,"protein":00,"carbs":00,"fat":00,"fiber":0,"note":"One brief sentence about this meal in context of the user's goals"}
+    const prompt = `Estimate the nutritional macros for this meal. Reply with ONLY a JSON object, nothing else. No explanation, no markdown, no code fences. Just the raw JSON:
+{"name":"short name","calories":0,"protein":0,"carbs":0,"fat":0,"note":"brief comment"}
 
-The meal: ${desc || 'See photo'}
-User is targeting ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein.
-Be accurate and conservative with estimates. Round to whole numbers.`;
+Meal: ${desc || 'See the attached photo'}
+Daily targets: ${settings.calorieGoal} cal, ${settings.proteinGoal}g protein.
+Be conservative. Whole numbers only.`;
 
     const contents = [{ role: 'user', parts: [] }];
     if (hasPhoto) {
@@ -1169,21 +1169,22 @@ Be accurate and conservative with estimates. Round to whole numbers.`;
     }
     contents[0].parts.push({ text: prompt });
 
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    // Use 2.0-flash for food estimation (2.5 is a thinking model that adds extra output)
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
     let result = null;
 
     for (const model of models) {
       try {
-        document.getElementById('foodEstimateStatus').textContent = `Analyzing with ${model}...`;
+        document.getElementById('foodEstimateStatus').textContent = `Analyzing your meal...`;
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 300, temperature: 0.3 } })
+          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } })
         });
         if (resp.status === 429) {
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 2500));
           const retry = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 300, temperature: 0.3 } })
+            body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } })
           });
           if (retry.ok) { const d = await retry.json(); result = d.candidates?.[0]?.content?.parts?.[0]?.text; if (result) break; }
           continue;
@@ -1198,15 +1199,17 @@ Be accurate and conservative with estimates. Round to whole numbers.`;
 
     if (result) {
       // Parse the JSON from the response (handle markdown code blocks)
-      // Extract JSON from response — handle code fences, extra text, etc.
-      let jsonStr = result;
-      // Try to find JSON object in the response
-      const jsonMatch = result.match(/\{[\s\S]*?"name"[\s\S]*?"calories"[\s\S]*?\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      } else {
-        jsonStr = result.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').replace(/^\s*json\s*/i, '').trim();
+      // Extract JSON from response
+      let jsonStr = result.trim();
+      // Strip code fences if present
+      jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      // If still not starting with {, try to find JSON object
+      if (!jsonStr.startsWith('{')) {
+        const braceStart = jsonStr.indexOf('{');
+        const braceEnd = jsonStr.lastIndexOf('}');
+        if (braceStart >= 0 && braceEnd > braceStart) jsonStr = jsonStr.slice(braceStart, braceEnd + 1);
       }
+      console.log('Parsing food JSON:', jsonStr.slice(0, 200));
       try {
         const parsed = JSON.parse(jsonStr);
         document.getElementById('foodName').value = parsed.name || desc;
