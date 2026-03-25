@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --bg-primary: #1a1a1a;
       --bg-secondary: #242424;
@@ -39,43 +38,31 @@
       --michael-color: #3b82f6;
       --tiara-color: #a855f7;
     }
-
     html { font-size: 16px; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100dvh;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg-primary); color: var(--text-primary);
+      min-height: 100dvh; overflow-x: hidden; -webkit-font-smoothing: antialiased;
     }
-
-    /* Header */
     .header {
       position: fixed; top: 0; left: 0; right: 0;
-      height: var(--header-height);
-      background: var(--bg-primary);
+      height: var(--header-height); background: var(--bg-primary);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px;
-      z-index: 100;
+      padding: 0 16px; z-index: 100;
     }
     .header-logo {
       font-weight: 800; font-size: 1.25rem;
       background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .header-date { font-size: 0.8rem; color: var(--text-secondary); }
     .header-avatar {
       width: 34px; height: 34px; border-radius: 50%;
       background: var(--bg-card); border: 2px solid var(--accent);
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; font-weight: 600; color: var(--accent);
-      cursor: pointer;
+      font-size: 0.85rem; font-weight: 600; color: var(--accent); cursor: pointer;
     }
-
-    /* Main Content */
     .main {
       padding-top: var(--header-height);
       padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
@@ -83,23 +70,18 @@
     .screen { display: none; padding: 16px; animation: fadeIn 0.25s ease; }
     .screen.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Bottom Nav */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
       height: calc(var(--nav-height) + var(--safe-bottom));
       padding-bottom: var(--safe-bottom);
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-around;
-      z-index: 100;
+      background: var(--bg-secondary); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-around; z-index: 100;
     }
     .nav-item {
       display: flex; flex-direction: column; align-items: center; gap: 3px;
       padding: 8px 12px; cursor: pointer; border: none; background: none;
       color: var(--text-muted); font-size: 0.65rem; font-weight: 500;
-      transition: color 0.2s;
-      font-family: inherit;
+      transition: color 0.2s; font-family: inherit;
     }
     .nav-item.active { color: var(--accent); }
     .nav-item svg { width: 24px; height: 24px; }
@@ -111,114 +93,60 @@
       margin-top: -20px; box-shadow: 0 4px 16px rgba(245,158,11,0.3);
     }
     .nav-item.chat-nav svg { color: var(--bg-primary); }
-    .nav-item.chat-nav.active .nav-icon-wrap { box-shadow: 0 4px 20px rgba(245,158,11,0.5); }
-
-    /* Cards */
     .card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      padding: 18px;
-      margin-bottom: 14px;
-      border: 1px solid var(--border);
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: 18px; margin-bottom: 14px; border: 1px solid var(--border);
     }
     .card-title {
-      font-size: 0.75rem; font-weight: 600;
-      color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.04em; margin-bottom: 12px;
+      font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;
     }
-
-    /* Progress Bars */
-    .progress-bar {
-      height: 8px; border-radius: 4px;
-      background: var(--bg-secondary); overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%; border-radius: 4px;
-      transition: width 0.5s ease;
-    }
+    .progress-bar { height: 8px; border-radius: 4px; background: var(--bg-secondary); overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
     .progress-bar-fill.calories { background: var(--accent); }
     .progress-bar-fill.protein { background: #22c55e; }
     .progress-bar-fill.carbs { background: #3b82f6; }
     .progress-bar-fill.fat { background: #ef4444; }
-
-    /* Summary Grid */
-    .summary-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 10px; margin-top: 12px;
-    }
-    .summary-item {
-      background: var(--bg-secondary); border-radius: var(--radius-sm);
-      padding: 12px; text-align: center;
-    }
-    .summary-value {
-      font-size: 1.4rem; font-weight: 700;
-      color: var(--text-primary);
-    }
-    .summary-label {
-      font-size: 0.7rem; color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    /* Macros Row */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .summary-item { background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+    .summary-value { font-size: 1.4rem; font-weight: 700; }
+    .summary-label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
     .macros-row { display: flex; gap: 10px; margin-top: 12px; }
     .macro-item { flex: 1; text-align: center; }
-    .macro-item .macro-val {
-      font-size: 0.95rem; font-weight: 700;
-    }
-    .macro-item .macro-label {
-      font-size: 0.65rem; color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
+    .macro-item .macro-val { font-size: 0.95rem; font-weight: 700; }
+    .macro-item .macro-label { font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 4px; }
     .macro-item .progress-bar { height: 6px; margin-top: 6px; }
-
-    /* Calorie Ring */
-    .calorie-ring-container {
-      display: flex; align-items: center; gap: 20px;
-    }
-    .calorie-ring {
-      width: 120px; height: 120px; position: relative; flex-shrink: 0;
-    }
+    .calorie-ring-container { display: flex; align-items: center; gap: 20px; }
+    .calorie-ring { width: 120px; height: 120px; position: relative; flex-shrink: 0; }
     .calorie-ring svg { transform: rotate(-90deg); }
     .calorie-ring-bg { fill: none; stroke: var(--bg-secondary); stroke-width: 10; }
-    .calorie-ring-fill {
-      fill: none; stroke: var(--accent); stroke-width: 10;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s ease;
-    }
-    .calorie-ring-text {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%); text-align: center;
-    }
+    .calorie-ring-fill { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+    .calorie-ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
     .calorie-ring-text .cal-num { font-size: 1.5rem; font-weight: 800; display: block; }
     .calorie-ring-text .cal-label { font-size: 0.65rem; color: var(--text-secondary); }
     .calorie-info { flex: 1; }
-    .calorie-info-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 0;
-      font-size: 0.85rem;
-    }
+    .calorie-info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.85rem; }
     .calorie-info-row + .calorie-info-row { border-top: 1px solid var(--border); }
-    .calorie-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      display: inline-block; margin-right: 6px;
+    .calorie-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px; font-family: inherit; font-size: 0.88rem; font-weight: 600;
+      border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all 0.2s;
     }
-
-    /* Chart placeholder */
-    .mini-chart {
-      height: 100px; position: relative;
-      margin-top: 8px;
-    }
-    .mini-chart canvas { width: 100%; height: 100%; }
-
-    /* Streak */
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: var(--bg-primary); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 8px 14px; font-size: 0.78rem; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 500; }
+    .chip-success { background: var(--success-bg); color: var(--success); }
+    .chip-danger { background: var(--danger-bg); color: var(--danger); }
     .streak-badge {
       display: inline-flex; align-items: center; gap: 6px;
       background: var(--accent-glow); border: 1px solid var(--accent);
       border-radius: 20px; padding: 4px 12px;
       font-size: 0.8rem; font-weight: 600; color: var(--accent);
     }
-
-    /* Workout Card */
     .workout-item {
       display: flex; align-items: center; gap: 14px;
       background: var(--bg-secondary); border-radius: var(--radius-sm);
@@ -226,117 +154,52 @@
     }
     .workout-icon {
       width: 44px; height: 44px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;
     }
-    .workout-icon.run { background: rgba(59,130,246,0.15); }
-    .workout-icon.weights { background: rgba(168,85,247,0.15); }
-    .workout-icon.ride { background: rgba(34,197,94,0.15); }
-    .workout-icon.rest { background: rgba(115,115,115,0.15); }
     .workout-details { flex: 1; }
     .workout-name { font-weight: 600; font-size: 0.9rem; }
     .workout-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
-    .workout-cal {
-      font-weight: 700; font-size: 0.95rem; color: var(--accent);
-      text-align: right;
-    }
+    .workout-cal { font-weight: 700; font-size: 0.95rem; color: var(--accent); text-align: right; }
     .workout-cal span { font-size: 0.7rem; color: var(--text-secondary); font-weight: 400; display: block; }
-
-    /* Coach Insight */
-    .coach-insight {
-      display: flex; gap: 12px;
-    }
+    .coach-insight { display: flex; gap: 12px; }
     .coach-avatar {
       width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
     }
     .coach-avatar.michael { background: rgba(59,130,246,0.2); color: var(--michael-color); }
-    .coach-avatar.jillian { background: rgba(239,68,68,0.2); color: var(--jillian-color); }
-    .coach-avatar.tiara { background: rgba(168,85,247,0.2); color: var(--tiara-color); }
     .coach-text { font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
     .coach-text strong { color: var(--text-primary); }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px 20px;
-      font-family: inherit; font-size: 0.88rem; font-weight: 600;
-      border-radius: var(--radius-sm); border: none; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-      color: var(--bg-primary);
-    }
-    .btn-primary:active { transform: scale(0.97); }
-    .btn-secondary {
-      background: var(--bg-card); color: var(--text-primary);
-      border: 1px solid var(--border);
-    }
-    .btn-full { width: 100%; }
-
-    /* Tag Chips */
-    .chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 0.72rem; font-weight: 500;
-    }
-    .chip-success { background: var(--success-bg); color: var(--success); }
-    .chip-danger { background: var(--danger-bg); color: var(--danger); }
-    .chip-info { background: var(--info-bg); color: var(--info); }
-
-    /* Time Range Tabs */
-    .time-tabs {
-      display: flex; gap: 4px;
-      background: var(--bg-secondary); border-radius: 8px;
-      padding: 3px; margin-bottom: 12px; width: fit-content;
-    }
+    .goal-line-label { font-size: 0.72rem; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+    .goal-line-label::before { content: ''; width: 20px; height: 2px; border-top: 2px dashed var(--accent); display: inline-block; }
+    .chart-canvas-wrap { position: relative; width: 100%; height: 160px; margin: 8px 0; }
+    .chart-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .section-title { font-size: 1.1rem; font-weight: 700; }
+    .time-tabs { display: flex; gap: 4px; background: var(--bg-secondary); border-radius: 8px; padding: 3px; margin-bottom: 12px; width: fit-content; }
     .time-tab {
-      padding: 6px 14px; border-radius: 6px;
-      font-size: 0.75rem; font-weight: 500;
-      color: var(--text-muted); cursor: pointer;
-      border: none; background: none; font-family: inherit;
-      transition: all 0.2s;
+      padding: 6px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; border: none; background: none;
+      font-family: inherit; transition: all 0.2s;
     }
-    .time-tab.active {
-      background: var(--bg-card); color: var(--text-primary);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    }
-
-    /* Weight Screen */
-    .weight-input-wrap {
-      text-align: center; padding: 20px 0;
-    }
-    .weight-input {
-      font-size: 3rem; font-weight: 800;
-      background: none; border: none; color: var(--text-primary);
-      text-align: center; width: 180px; outline: none;
-      font-family: inherit; caret-color: var(--accent);
-    }
-    .weight-unit { font-size: 1.2rem; color: var(--text-muted); font-weight: 500; }
-    .weight-change {
-      font-size: 0.85rem; margin-top: 8px;
-    }
-
-    /* Food Log */
+    .time-tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
     .meal-section { margin-bottom: 16px; }
-    .meal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 8px;
-    }
+    .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .meal-header h3 { font-size: 0.88rem; font-weight: 600; }
     .meal-header .meal-cals { font-size: 0.8rem; color: var(--text-secondary); }
     .food-item {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px;
-      background: var(--bg-secondary); border-radius: var(--radius-xs);
+      padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-xs);
       margin-bottom: 6px; font-size: 0.85rem;
     }
     .food-item-name { font-weight: 500; }
     .food-item-macros { color: var(--text-secondary); font-size: 0.75rem; }
     .food-item-cals { font-weight: 600; color: var(--accent); white-space: nowrap; }
-
+    .food-item-delete {
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: 1.1rem; padding: 0 0 0 10px; transition: color 0.2s;
+    }
+    .food-item-delete:hover { color: var(--danger); }
     .add-meal-btn {
       width: 100%; padding: 14px;
       background: var(--bg-secondary); border: 2px dashed var(--border);
@@ -346,39 +209,34 @@
       display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .add-meal-btn:hover { border-color: var(--accent); color: var(--accent); }
-
+    .staple-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+    .staple-card {
+      min-width: 140px; padding: 12px;
+      background: var(--bg-secondary); border-radius: var(--radius-sm);
+      cursor: pointer; border: 1px solid var(--border); transition: border-color 0.2s;
+    }
+    .staple-card:hover { border-color: var(--accent); }
+    .staple-name { font-weight: 600; font-size: 0.82rem; margin-bottom: 4px; }
+    .staple-info { font-size: 0.72rem; color: var(--text-secondary); }
     /* Chat */
     .chat-container { display: flex; flex-direction: column; height: calc(100dvh - var(--header-height) - var(--nav-height) - var(--safe-bottom)); }
-    .chat-header-info {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px;
-    }
+    .chat-header-info { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
     .chat-persona-name { font-weight: 600; font-size: 0.95rem; }
     .chat-persona-desc { font-size: 0.72rem; color: var(--text-secondary); }
-    .chat-messages {
-      flex: 1; overflow-y: auto; padding-bottom: 16px;
-      display: flex; flex-direction: column; gap: 12px;
+    .chat-messages { flex: 1; overflow-y: auto; padding-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-msg { max-width: 82%; padding: 12px 16px; border-radius: 18px; font-size: 0.88rem; line-height: 1.5; }
+    .chat-msg.user { align-self: flex-end; background: var(--accent); color: var(--bg-primary); border-bottom-right-radius: 4px; }
+    .chat-msg.coach { align-self: flex-start; background: var(--bg-card); color: var(--text-primary); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+    .chat-msg-img { max-width: 200px; border-radius: var(--radius-xs); margin-bottom: 6px; display: block; }
+    .chat-input-bar { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); align-items: flex-end; }
+    .chat-input { flex: 1; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; color: var(--text-primary); font-family: inherit; font-size: 0.88rem; outline: none; }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-send-btn {
+      width: 44px; height: 44px; border-radius: 50%; background: var(--accent);
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .chat-msg {
-      max-width: 82%; padding: 12px 16px;
-      border-radius: 18px; font-size: 0.88rem; line-height: 1.5;
-    }
-    .chat-msg.user {
-      align-self: flex-end;
-      background: var(--accent); color: var(--bg-primary);
-      border-bottom-right-radius: 4px;
-    }
-    .chat-msg.coach {
-      align-self: flex-start;
-      background: var(--bg-card); color: var(--text-primary);
-      border-bottom-left-radius: 4px;
-      border: 1px solid var(--border);
-    }
-    .chat-input-bar {
-      display: flex; gap: 8px; padding-top: 12px;
-      border-top: 1px solid var(--border);
-      align-items: flex-end;
-    }
+    .chat-send-btn svg { width: 20px; height: 20px; color: var(--bg-primary); }
     .chat-photo-btn {
       width: 44px; height: 44px; border-radius: 50%;
       background: var(--bg-card); border: 1px solid var(--border);
@@ -388,424 +246,170 @@
     .chat-photo-btn:hover { border-color: var(--accent); }
     .chat-photo-btn svg { width: 20px; height: 20px; color: var(--text-secondary); }
     .chat-photo-btn:hover svg { color: var(--accent); }
-    .chat-photo-preview {
-      display: none; padding: 8px 0;
-      border-top: 1px solid var(--border);
-    }
+    .chat-photo-preview { display: none; padding: 8px 0; }
     .chat-photo-preview.visible { display: flex; align-items: center; gap: 10px; }
-    .chat-photo-thumb {
-      width: 64px; height: 64px; border-radius: var(--radius-xs);
-      object-fit: cover; border: 1px solid var(--border);
-    }
+    .chat-photo-thumb { width: 64px; height: 64px; border-radius: var(--radius-xs); object-fit: cover; border: 1px solid var(--border); }
     .chat-photo-info { flex: 1; font-size: 0.8rem; color: var(--text-secondary); }
     .chat-photo-info strong { color: var(--text-primary); display: block; margin-bottom: 2px; }
-    .chat-photo-remove {
-      background: none; border: none; color: var(--text-muted);
-      cursor: pointer; padding: 4px; font-size: 1.2rem;
-    }
+    .chat-photo-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 1.2rem; }
     .chat-photo-remove:hover { color: var(--danger); }
-    .chat-msg-img {
-      max-width: 200px; border-radius: var(--radius-xs);
-      margin-bottom: 6px; display: block;
-    }
-    .chat-input {
-      flex: 1; padding: 12px 16px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 24px; color: var(--text-primary);
-      font-family: inherit; font-size: 0.88rem; outline: none;
-    }
-    .chat-input::placeholder { color: var(--text-muted); }
-    .chat-input:focus { border-color: var(--accent); }
-    .chat-send-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--accent); border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .chat-send-btn svg { width: 20px; height: 20px; color: var(--bg-primary); }
-
-    /* Stat row for weight/workout */
-    .stat-row {
-      display: flex; justify-content: space-between;
-      padding: 10px 0;
-    }
+    /* Weight */
+    .weight-input-wrap { text-align: center; padding: 20px 0; }
+    .weight-input { font-size: 3rem; font-weight: 800; background: none; border: none; color: var(--text-primary); text-align: center; width: 180px; outline: none; font-family: inherit; caret-color: var(--accent); }
+    .weight-unit { font-size: 1.2rem; color: var(--text-muted); font-weight: 500; }
+    .stat-row { display: flex; justify-content: space-between; padding: 10px 0; }
     .stat-row + .stat-row { border-top: 1px solid var(--border); }
     .stat-label { color: var(--text-secondary); font-size: 0.82rem; }
     .stat-value { font-weight: 600; font-size: 0.88rem; }
-
-    /* Canvas for charts */
-    .chart-canvas-wrap {
-      position: relative; width: 100%; height: 160px;
-      margin: 8px 0;
-    }
-    .chart-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
-
-    /* Section header */
-    .section-header {
+    /* Settings */
+    .settings-section { margin-bottom: 20px; }
+    .settings-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .settings-row {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
+      padding: 14px; background: var(--bg-secondary); border-radius: var(--radius-xs); margin-bottom: 6px; cursor: pointer;
     }
-    .section-title { font-size: 1.1rem; font-weight: 700; }
-
-    /* Favorites / Staples */
-    .staple-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
-    .staple-card {
-      min-width: 140px; padding: 12px;
-      background: var(--bg-secondary); border-radius: var(--radius-sm);
-      cursor: pointer; border: 1px solid var(--border);
-      transition: border-color 0.2s;
+    .settings-row-label { font-size: 0.88rem; font-weight: 500; }
+    .settings-row-value { font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+    .toggle-track { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; transition: background 0.2s; cursor: pointer; }
+    .toggle-track.on { background: var(--accent); }
+    .toggle-track::after { content: ''; position: absolute; width: 22px; height: 22px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.2s; }
+    .toggle-track.on::after { transform: translateX(18px); }
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 200; align-items: flex-end; justify-content: center;
     }
-    .staple-card:hover { border-color: var(--accent); }
-    .staple-name { font-weight: 600; font-size: 0.82rem; margin-bottom: 4px; }
-    .staple-info { font-size: 0.72rem; color: var(--text-secondary); }
-
-    /* Goal line label */
-    .goal-line-label {
-      font-size: 0.72rem; color: var(--accent);
-      display: flex; align-items: center; gap: 4px;
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-secondary); border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
+      padding: 24px 20px calc(20px + var(--safe-bottom)); animation: slideUp 0.3s ease;
     }
-    .goal-line-label::before {
-      content: ''; width: 20px; height: 2px;
-      border-top: 2px dashed var(--accent); display: inline-block;
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xs); color: var(--text-primary); font-family: inherit;
+      font-size: 0.88rem; outline: none;
     }
-
-    /* Scrollbar */
+    .form-input:focus { border-color: var(--accent); }
+    .form-select {
+      width: 100%; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xs); color: var(--text-primary); font-family: inherit;
+      font-size: 0.88rem; outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' fill='%23a3a3a3' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .workout-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .workout-type-btn {
+      padding: 12px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xs); text-align: center; cursor: pointer;
+      font-family: inherit; font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .workout-type-btn.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+    .workout-type-btn:hover { border-color: var(--accent); }
+    .settings-edit-btn {
+      background: none; border: none; color: var(--accent); font-size: 0.78rem;
+      font-weight: 600; cursor: pointer; font-family: inherit;
+    }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* Desktop */
     @media (min-width: 768px) {
       .main { max-width: 480px; margin: 0 auto; }
       .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; }
       .header { max-width: 480px; left: 50%; transform: translateX(-50%); border-radius: 0 0 20px 20px; }
+      .modal { border-radius: var(--radius); margin-bottom: 20px; }
+      .modal-overlay { align-items: center; }
     }
-
-    /* Net cal highlight */
-    .net-cal-positive { color: var(--danger); }
-    .net-cal-negative { color: var(--success); }
-    .net-cal-balanced { color: var(--accent); }
-
-    /* Onboarding overlay (simple settings placeholder) */
-    .settings-section {
-      margin-bottom: 20px;
-    }
-    .settings-label {
-      font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.04em;
-      margin-bottom: 8px;
-    }
-    .settings-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 14px; background: var(--bg-secondary);
-      border-radius: var(--radius-xs); margin-bottom: 6px;
-      cursor: pointer;
-    }
-    .settings-row-label { font-size: 0.88rem; font-weight: 500; }
-    .settings-row-value { font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
-    .toggle-track {
-      width: 44px; height: 26px; border-radius: 13px;
-      background: var(--border); position: relative;
-      transition: background 0.2s; cursor: pointer;
-    }
-    .toggle-track.on { background: var(--accent); }
-    .toggle-track::after {
-      content: ''; position: absolute;
-      width: 22px; height: 22px; border-radius: 50%;
-      background: white; top: 2px; left: 2px;
-      transition: transform 0.2s;
-    }
-    .toggle-track.on::after { transform: translateX(18px); }
   </style>
 </head>
 <body>
 
-<!-- Header -->
 <header class="header">
   <div class="header-logo">HeatFit</div>
   <div class="header-date" id="headerDate"></div>
-  <div class="header-avatar" onclick="switchScreen('settings')">AH</div>
+  <div class="header-avatar" onclick="switchScreen('settings')" id="avatarInitials">AH</div>
 </header>
 
-<!-- Main Content -->
 <main class="main">
-
-  <!-- ========== DASHBOARD ========== -->
+  <!-- DASHBOARD -->
   <section id="screen-home" class="screen active">
-
-    <!-- Streak -->
-    <div style="margin-bottom: 14px;">
-      <span class="streak-badge">
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16c3.314 0 6-2 6-5.5 0-1.44-.669-2.97-1.53-4.32C11.6 4.87 10.42 3.64 9.5 2.5c-.17-.21-.5-.05-.43.2.47 1.6-.38 3.07-1.53 3.8-.14.09-.32-.02-.3-.18.13-1.07-.25-2.5-1.04-3.85C5.76 1.68 5.1 1.03 4.5.5c-.2-.18-.5.03-.4.27.43 1.07.09 2.43-.46 3.34C3.1 5.56 2 7.03 2 8.5 2 12.5 4.5 16 8 16z"/></svg>
-        7-day streak
-      </span>
-    </div>
-
-    <!-- Calorie Summary -->
+    <div style="margin-bottom:14px;" id="streakBadge"></div>
+    <div class="card" id="dashCalorieCard"></div>
+    <div class="card" id="dashMacrosCard"></div>
     <div class="card">
-      <div class="card-title">Today's Calories</div>
-      <div class="calorie-ring-container">
-        <div class="calorie-ring">
-          <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle class="calorie-ring-bg" cx="60" cy="60" r="50"/>
-            <circle class="calorie-ring-fill" cx="60" cy="60" r="50"
-              stroke-dasharray="314" stroke-dashoffset="94" />
-          </svg>
-          <div class="calorie-ring-text">
-            <span class="cal-num">1,480</span>
-            <span class="cal-label">of 2,100</span>
-          </div>
-        </div>
-        <div class="calorie-info">
-          <div class="calorie-info-row">
-            <span><span class="calorie-dot" style="background:var(--accent)"></span>Consumed</span>
-            <span style="font-weight:600">1,480</span>
-          </div>
-          <div class="calorie-info-row">
-            <span><span class="calorie-dot" style="background:var(--success)"></span>Burned</span>
-            <span style="font-weight:600">380</span>
-          </div>
-          <div class="calorie-info-row">
-            <span><span class="calorie-dot" style="background:var(--info)"></span>Net</span>
-            <span style="font-weight:600" class="net-cal-negative">-1,000</span>
-          </div>
-          <div class="calorie-info-row">
-            <span><span class="calorie-dot" style="background:var(--text-muted)"></span>Remaining</span>
-            <span style="font-weight:600;color:var(--accent)">620</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Macros -->
-    <div class="card">
-      <div class="card-title">Macros</div>
-      <div class="macros-row">
-        <div class="macro-item">
-          <div class="macro-label">Protein</div>
-          <div class="macro-val" style="color:#22c55e">98g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ 155g</span></div>
-          <div class="progress-bar"><div class="progress-bar-fill protein" style="width:63%"></div></div>
-        </div>
-        <div class="macro-item">
-          <div class="macro-label">Carbs</div>
-          <div class="macro-val" style="color:#3b82f6">142g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ 210g</span></div>
-          <div class="progress-bar"><div class="progress-bar-fill carbs" style="width:68%"></div></div>
-        </div>
-        <div class="macro-item">
-          <div class="macro-label">Fat</div>
-          <div class="macro-val" style="color:#ef4444">52g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ 70g</span></div>
-          <div class="progress-bar"><div class="progress-bar-fill fat" style="width:74%"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Weight Mini Chart -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
           <div class="card-title">Weight Trend</div>
-          <div style="font-size:1.6rem; font-weight:800;">187.4 <span style="font-size:0.85rem; font-weight:400; color:var(--text-muted);">lbs</span></div>
-          <div class="chip chip-success" style="margin-top:6px;">-1.2 lbs this week</div>
+          <div id="dashWeightCurrent" style="font-size:1.6rem;font-weight:800;"></div>
+          <div id="dashWeightChange" style="margin-top:6px;"></div>
         </div>
         <div style="text-align:right;">
-          <div class="goal-line-label">Goal: 175 lbs</div>
-          <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:4px;">12.4 lbs to go</div>
+          <div class="goal-line-label" id="dashGoalLabel"></div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;" id="dashGoalDist"></div>
         </div>
       </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="weightMiniChart"></canvas>
-      </div>
+      <div class="chart-canvas-wrap"><canvas id="weightMiniChart"></canvas></div>
     </div>
-
-    <!-- Today's Workout -->
-    <div class="card">
-      <div class="card-title">Today's Workout</div>
-      <div class="workout-item" style="margin-bottom:0;background:transparent;padding:0;">
-        <div class="workout-icon run" style="background:rgba(59,130,246,0.15)">
-          <svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0zM7 21l3-4 2.5 1 3.5-6-2-2.5L16 7l-3 1-2 3-3 1 2 3-3 6z"/></svg>
-        </div>
-        <div class="workout-details">
-          <div class="workout-name">Morning Run</div>
-          <div class="workout-meta">5.2 mi &middot; 42 min &middot; via Strava</div>
-        </div>
-        <div class="workout-cal">
-          380
-          <span>kcal burned</span>
-        </div>
-      </div>
-      <div style="margin-top:10px; font-size:0.78rem; color:var(--text-secondary); background:var(--bg-secondary); padding:10px 12px; border-radius:var(--radius-xs);">
-        HeatFit estimate: <strong style="color:var(--accent)">380 kcal</strong> &middot; Strava reported 520 kcal — we think 380 is closer.
-      </div>
-    </div>
-
-    <!-- AI Coach Insight -->
+    <div class="card" id="dashWorkoutCard"></div>
     <div class="card">
       <div class="card-title">Coach Insight</div>
       <div class="coach-insight">
         <div class="coach-avatar michael">M</div>
         <div>
-          <div class="coach-text">
-            <strong>Your deficit is dialed in today.</strong> After that morning run, you've got 620 calories to work with for dinner. Keep protein high — you're at 63% of your target and one solid meal can close the gap.
-          </div>
-          <button class="btn btn-secondary" style="margin-top:10px; padding:8px 14px; font-size:0.78rem;" onclick="switchScreen('chat')">Ask Coach</button>
+          <div class="coach-text" id="dashCoachInsight"></div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="switchScreen('chat')">Ask Coach</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========== LOG FOOD ========== -->
+  <!-- LOG FOOD -->
   <section id="screen-food" class="screen">
     <div class="section-header">
       <div class="section-title">Log Food</div>
-      <div style="font-size:0.8rem;color:var(--text-secondary);">1,480 / 2,100 kcal</div>
+      <div style="font-size:0.8rem;color:var(--text-secondary);" id="foodCalSummary"></div>
     </div>
-
-    <!-- Quick Log Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button class="btn btn-primary" style="flex:1;padding:14px;">
+      <button class="btn btn-primary" style="flex:1;padding:14px;" onclick="openFoodModal('photo')">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Photo
       </button>
-      <button class="btn btn-secondary" style="flex:1;padding:14px;">
+      <button class="btn btn-secondary" style="flex:1;padding:14px;" onclick="openFoodModal('text')">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Describe
       </button>
     </div>
-
-    <!-- Staple Meals -->
-    <div style="margin-bottom:16px;">
-      <div class="card-title">Staple Meals</div>
-      <div class="staple-grid">
-        <div class="staple-card">
-          <div class="staple-name">Chicken & Rice Bowl</div>
-          <div class="staple-info">520 kcal &middot; 45g P</div>
-        </div>
-        <div class="staple-card">
-          <div class="staple-name">Protein Shake</div>
-          <div class="staple-info">280 kcal &middot; 35g P</div>
-        </div>
-        <div class="staple-card">
-          <div class="staple-name">Greek Yogurt Bowl</div>
-          <div class="staple-info">340 kcal &middot; 28g P</div>
-        </div>
-        <div class="staple-card">
-          <div class="staple-name">Salmon & Veggies</div>
-          <div class="staple-info">480 kcal &middot; 38g P</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Meals Logged Today -->
-    <div class="meal-section">
-      <div class="meal-header">
-        <h3>Breakfast</h3>
-        <span class="meal-cals">460 kcal</span>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Greek Yogurt Bowl</div>
-          <div class="food-item-macros">28g P &middot; 38g C &middot; 12g F</div>
-        </div>
-        <div class="food-item-cals">340 kcal</div>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Banana</div>
-          <div class="food-item-macros">1g P &middot; 27g C &middot; 0g F</div>
-        </div>
-        <div class="food-item-cals">105 kcal</div>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Black Coffee</div>
-          <div class="food-item-macros">0g P &middot; 0g C &middot; 0g F</div>
-        </div>
-        <div class="food-item-cals">5 kcal</div>
-      </div>
-    </div>
-
-    <div class="meal-section">
-      <div class="meal-header">
-        <h3>Lunch</h3>
-        <span class="meal-cals">520 kcal</span>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Chicken & Rice Bowl</div>
-          <div class="food-item-macros">45g P &middot; 48g C &middot; 14g F</div>
-        </div>
-        <div class="food-item-cals">520 kcal</div>
-      </div>
-    </div>
-
-    <div class="meal-section">
-      <div class="meal-header">
-        <h3>Snack</h3>
-        <span class="meal-cals">500 kcal</span>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Protein Shake</div>
-          <div class="food-item-macros">35g P &middot; 20g C &middot; 8g F</div>
-        </div>
-        <div class="food-item-cals">280 kcal</div>
-      </div>
-      <div class="food-item">
-        <div>
-          <div class="food-item-name">Apple with Peanut Butter</div>
-          <div class="food-item-macros">4g P &middot; 30g C &middot; 16g F</div>
-        </div>
-        <div class="food-item-cals">220 kcal</div>
-      </div>
-    </div>
-
-    <div class="meal-section">
-      <div class="meal-header">
-        <h3>Dinner</h3>
-        <span class="meal-cals" style="color:var(--text-muted);">Not logged yet</span>
-      </div>
-      <button class="add-meal-btn">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add Dinner
-      </button>
-    </div>
+    <div style="margin-bottom:16px;" id="stapleSection"></div>
+    <div id="foodLog"></div>
   </section>
 
-  <!-- ========== CHAT ========== -->
+  <!-- CHAT -->
   <section id="screen-chat" class="screen">
     <div class="chat-container">
       <div class="chat-header-info">
         <div class="coach-avatar michael">M</div>
         <div>
-          <div class="chat-persona-name">Coach Michael</div>
-          <div class="chat-persona-desc">Balanced, real, and grounded</div>
+          <div class="chat-persona-name" id="chatCoachName">Coach Michael</div>
+          <div class="chat-persona-desc" id="chatCoachDesc">Balanced, real, and grounded</div>
         </div>
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="chat-msg coach">Hey! Solid morning — the run plus a clean breakfast has you in a great spot. What's on your mind?</div>
-        <div class="chat-msg user">I'm going out for Italian tonight. How should I handle it?</div>
-        <div class="chat-msg coach">
-          Good call planning ahead. You've got about 620 calories left for dinner. Here's the play:<br><br>
-          <strong>Go for:</strong> Grilled chicken or fish, side of vegetables, small portion of pasta (not the entree-size bowl).<br><br>
-          <strong>Watch for:</strong> Bread basket (easy 300+ cal), cream-based sauces, and appetizers before the meal.<br><br>
-          If you skip the bread and go with a protein-forward dish, you can enjoy dinner guilt-free and still end the day in a solid deficit. You've earned it with that run this morning.
-        </div>
-        <div class="chat-msg user">What about a glass of wine?</div>
-        <div class="chat-msg coach">
-          A glass of red or white runs about 125 calories. That'd put you right at your limit, but you'll still be in a deficit for the day thanks to the run. One glass — enjoy it. Just don't let one turn into three. That's where Italian dinners get you.
-        </div>
-      </div>
+      <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-photo-preview" id="chatPhotoPreview">
         <img class="chat-photo-thumb" id="chatPhotoThumb" src="" alt="preview" />
-        <div class="chat-photo-info">
-          <strong id="chatPhotoName">meal_photo.jpg</strong>
-          Ready to send with your message
-        </div>
-        <button class="chat-photo-remove" onclick="removePhoto()" title="Remove">&times;</button>
+        <div class="chat-photo-info"><strong id="chatPhotoName"></strong>Ready to send</div>
+        <button class="chat-photo-remove" onclick="removePhoto()">&times;</button>
       </div>
       <div class="chat-input-bar">
         <input type="file" id="chatPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)" />
-        <button class="chat-photo-btn" onclick="document.getElementById('chatPhotoInput').click()" title="Upload meal photo">
+        <button class="chat-photo-btn" onclick="document.getElementById('chatPhotoInput').click()">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
         <input type="text" class="chat-input" placeholder="Ask your coach..." id="chatInput" />
@@ -816,561 +420,728 @@
     </div>
   </section>
 
-  <!-- ========== WEIGHT ========== -->
+  <!-- WEIGHT -->
   <section id="screen-weight" class="screen">
     <div class="section-header">
       <div class="section-title">Weight</div>
-      <div class="chip chip-success">-3.6 lbs total</div>
+      <div id="weightTotalChange"></div>
     </div>
-
-    <!-- Log Weight -->
     <div class="card" style="text-align:center;">
       <div class="weight-input-wrap">
-        <input type="number" class="weight-input" value="187.4" step="0.1" />
-        <span class="weight-unit">lbs</span>
-        <div class="weight-change net-cal-negative">-0.4 lbs from yesterday</div>
+        <input type="number" class="weight-input" id="weightInput" step="0.1" />
+        <span class="weight-unit" id="weightUnit">lbs</span>
+        <div id="weightDayChange" style="font-size:0.85rem;margin-top:8px;"></div>
       </div>
-      <input type="text" placeholder="Add a note (optional)" style="width:100%;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-primary);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:12px;" />
-      <button class="btn btn-primary btn-full">Log Weight</button>
+      <input type="text" id="weightNote" placeholder="Add a note (optional)" style="width:100%;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-primary);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:12px;" />
+      <button class="btn btn-primary btn-full" onclick="logWeight()">Log Weight</button>
     </div>
-
-    <!-- Weight Chart -->
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="card-title" style="margin-bottom:0;">Weight History</div>
-        <div class="goal-line-label">Goal: 175 lbs</div>
+        <div class="goal-line-label" id="weightGoalLabel"></div>
       </div>
-      <div class="time-tabs" style="margin-top:12px;">
-        <button class="time-tab">1W</button>
-        <button class="time-tab active">1M</button>
-        <button class="time-tab">3M</button>
-        <button class="time-tab">All</button>
-      </div>
-      <div class="chart-canvas-wrap" style="height:200px;">
-        <canvas id="weightChart"></canvas>
-      </div>
+      <div class="chart-canvas-wrap" style="height:200px;margin-top:12px;"><canvas id="weightChart"></canvas></div>
     </div>
-
-    <!-- Weight Stats -->
-    <div class="card">
-      <div class="card-title">Stats</div>
-      <div class="stat-row">
-        <span class="stat-label">Starting Weight</span>
-        <span class="stat-value">191.0 lbs</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Current Weight</span>
-        <span class="stat-value">187.4 lbs</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Goal Weight</span>
-        <span class="stat-value" style="color:var(--accent);">175.0 lbs</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Rate</span>
-        <span class="stat-value net-cal-negative">-1.2 lbs/week</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Est. Goal Date</span>
-        <span class="stat-value">~June 7, 2026</span>
-      </div>
-    </div>
-
-    <!-- Coach Feedback -->
-    <div class="card">
-      <div class="coach-insight">
-        <div class="coach-avatar michael">M</div>
-        <div class="coach-text">
-          <strong>Down 0.4 lbs from yesterday — the trend is solid.</strong> You're averaging 1.2 lbs per week, which is right in the sweet spot. At this rate, you'll hit 175 by early June. Keep doing what you're doing.
-        </div>
-      </div>
-    </div>
+    <div class="card" id="weightStats"></div>
+    <div id="weightEntries"></div>
   </section>
 
-  <!-- ========== WORKOUTS ========== -->
+  <!-- WORKOUTS -->
   <section id="screen-workouts" class="screen">
     <div class="section-header">
       <div class="section-title">Workouts</div>
-      <button class="btn btn-secondary" style="padding:8px 14px;font-size:0.78rem;">+ Manual Entry</button>
+      <button class="btn btn-secondary btn-sm" onclick="openWorkoutModal()">+ Log Workout</button>
     </div>
-
-    <div class="time-tabs">
-      <button class="time-tab active">This Week</button>
-      <button class="time-tab">Last Week</button>
-      <button class="time-tab">Month</button>
-    </div>
-
-    <!-- Summary -->
-    <div class="summary-grid" style="margin-bottom:16px;">
-      <div class="summary-item">
-        <div class="summary-value">4</div>
-        <div class="summary-label">Workouts</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-value" style="color:var(--accent);">1,420</div>
-        <div class="summary-label">Calories Burned</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-value">3h 12m</div>
-        <div class="summary-label">Total Duration</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-value">14.8 mi</div>
-        <div class="summary-label">Distance</div>
-      </div>
-    </div>
-
-    <!-- Workout list -->
-    <div class="workout-item">
-      <div class="workout-icon run">
-        <svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0zM7 21l3-4 2.5 1 3.5-6-2-2.5L16 7l-3 1-2 3-3 1 2 3-3 6z"/></svg>
-      </div>
-      <div class="workout-details">
-        <div class="workout-name">Morning Run</div>
-        <div class="workout-meta">Today &middot; 5.2 mi &middot; 42 min</div>
-      </div>
-      <div class="workout-cal">380<span>kcal</span></div>
-    </div>
-
-    <div class="workout-item">
-      <div class="workout-icon rest" style="background:rgba(115,115,115,0.15)">
-        <svg width="22" height="22" fill="none" stroke="#737373" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </div>
-      <div class="workout-details">
-        <div class="workout-name">Rest Day</div>
-        <div class="workout-meta">Yesterday</div>
-      </div>
-      <div class="workout-cal" style="color:var(--text-muted);">0<span>kcal</span></div>
-    </div>
-
-    <div class="workout-item">
-      <div class="workout-icon weights" style="background:rgba(168,85,247,0.15)">
-        <svg width="22" height="22" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="10" width="4" height="4" rx="1"/><rect x="18" y="10" width="4" height="4" rx="1"/><rect x="6" y="8" width="3" height="8" rx="1"/><rect x="15" y="8" width="3" height="8" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
-      </div>
-      <div class="workout-details">
-        <div class="workout-name">Upper Body Strength</div>
-        <div class="workout-meta">Sat &middot; 55 min &middot; Hard effort</div>
-      </div>
-      <div class="workout-cal">310<span>kcal</span></div>
-    </div>
-
-    <div class="workout-item">
-      <div class="workout-icon run">
-        <svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0zM7 21l3-4 2.5 1 3.5-6-2-2.5L16 7l-3 1-2 3-3 1 2 3-3 6z"/></svg>
-      </div>
-      <div class="workout-details">
-        <div class="workout-name">Easy Run</div>
-        <div class="workout-meta">Fri &middot; 3.4 mi &middot; 30 min</div>
-      </div>
-      <div class="workout-cal">280<span>kcal</span></div>
-    </div>
-
-    <div class="workout-item">
-      <div class="workout-icon ride" style="background:rgba(34,197,94,0.15)">
-        <svg width="22" height="22" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h3"/></svg>
-      </div>
-      <div class="workout-details">
-        <div class="workout-name">Bike Ride</div>
-        <div class="workout-meta">Thu &middot; 6.2 mi &middot; 35 min</div>
-      </div>
-      <div class="workout-cal">350<span>kcal</span></div>
-    </div>
-
-    <!-- Coach feedback -->
-    <div class="card" style="margin-top:6px;">
-      <div class="coach-insight">
-        <div class="coach-avatar michael">M</div>
-        <div class="coach-text">
-          <strong>4 workouts this week — solid consistency.</strong> You're mixing cardio and strength well. Make sure you're hitting your protein target today after that run to support recovery for tomorrow's session.
-        </div>
-      </div>
-    </div>
+    <div class="summary-grid" style="margin-bottom:16px;" id="workoutSummary"></div>
+    <div id="workoutList"></div>
   </section>
 
-  <!-- ========== SETTINGS ========== -->
+  <!-- SETTINGS -->
   <section id="screen-settings" class="screen">
     <div class="section-header">
       <div class="section-title">Settings</div>
     </div>
-
-    <div class="settings-section">
-      <div class="settings-label">Profile</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Name</span>
-        <span class="settings-row-value">Alex H.</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Units</span>
-        <span class="settings-row-value">Imperial (lbs, ft/in)</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Height</span>
-        <span class="settings-row-value">5'11"</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Activity Level</span>
-        <span class="settings-row-value">Lightly Active</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">Goals</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Primary Goal</span>
-        <span class="settings-row-value">Lose Weight</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Target Rate</span>
-        <span class="settings-row-value">1.0 lbs/week</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Goal Weight</span>
-        <span class="settings-row-value">175 lbs</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Secondary Goals</span>
-        <span class="settings-row-value">Strength, Endurance</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">AI Coach</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Persona</span>
-        <span class="settings-row-value">
-          <span style="color:var(--michael-color);">Michael</span>
-        </span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Response Length</span>
-        <span class="settings-row-value">Medium</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Emoji Use</span>
-        <span class="settings-row-value">A Few</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">Connections</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Strava</span>
-        <span class="settings-row-value" style="color:var(--success);">Connected</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">Notifications</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Morning Check-in</span>
-        <div class="toggle-track on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Breakfast Reminder</span>
-        <div class="toggle-track on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Lunch Reminder</span>
-        <div class="toggle-track on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Dinner Reminder</span>
-        <div class="toggle-track on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Day Recap</span>
-        <div class="toggle-track on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Weekly Summary</span>
-        <div class="toggle-track" onclick="this.classList.toggle('on')"></div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-label">Meal Windows</div>
-      <div class="settings-row">
-        <span class="settings-row-label">Breakfast</span>
-        <span class="settings-row-value">7:00 AM – 9:00 AM</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Lunch</span>
-        <span class="settings-row-value">12:00 PM – 1:00 PM</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">Dinner</span>
-        <span class="settings-row-value">6:00 PM – 8:00 PM</span>
-      </div>
-    </div>
-
-    <button class="btn btn-secondary btn-full" style="margin-top:10px;color:var(--danger);">Sign Out</button>
+    <div id="settingsContent"></div>
   </section>
-
 </main>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
   <button class="nav-item active" data-screen="home" onclick="switchScreen('home')">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Home
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
   </button>
   <button class="nav-item" data-screen="food" onclick="switchScreen('food')">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-    Log Food
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Log Food
   </button>
   <button class="nav-item chat-nav" data-screen="chat" onclick="switchScreen('chat')">
-    <div class="nav-icon-wrap">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    </div>
-    Chat
+    <div class="nav-icon-wrap"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>Chat
   </button>
   <button class="nav-item" data-screen="weight" onclick="switchScreen('weight')">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/><circle cx="12" cy="12" r="9"/></svg>
-    Weight
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9" fill="none"/></svg>Weight
   </button>
   <button class="nav-item" data-screen="workouts" onclick="switchScreen('workouts')">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-    Workouts
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Workouts
   </button>
 </nav>
 
+<!-- MODALS -->
+<div class="modal-overlay" id="foodModal">
+  <div class="modal">
+    <div class="modal-title">Log Food <button class="modal-close" onclick="closeModal('foodModal')">&times;</button></div>
+    <div class="form-group">
+      <label class="form-label">Meal</label>
+      <select class="form-select" id="foodMealType">
+        <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+      </select>
+    </div>
+    <div class="form-group" id="foodPhotoGroup" style="display:none;">
+      <label class="form-label">Photo</label>
+      <input type="file" accept="image/*" capture="environment" id="foodPhotoFile" class="form-input" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input type="text" class="form-input" id="foodDesc" placeholder="e.g. Grilled chicken, rice, broccoli" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Food Name</label>
+      <input type="text" class="form-input" id="foodName" placeholder="e.g. Chicken & Rice Bowl" />
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Calories</label><input type="number" class="form-input" id="foodCals" placeholder="0" /></div>
+      <div class="form-group"><label class="form-label">Protein (g)</label><input type="number" class="form-input" id="foodProtein" placeholder="0" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Carbs (g)</label><input type="number" class="form-input" id="foodCarbs" placeholder="0" /></div>
+      <div class="form-group"><label class="form-label">Fat (g)</label><input type="number" class="form-input" id="foodFat" placeholder="0" /></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <input type="checkbox" id="foodSaveStaple" checked style="accent-color:var(--accent);width:18px;height:18px;" />
+      <label for="foodSaveStaple" style="font-size:0.85rem;">Save as Staple Meal</label>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveFood()">Log Food</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="workoutModal">
+  <div class="modal">
+    <div class="modal-title">Log Workout <button class="modal-close" onclick="closeModal('workoutModal')">&times;</button></div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <div class="workout-type-grid" id="workoutTypeGrid"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Duration (min)</label><input type="number" class="form-input" id="workoutDuration" placeholder="0" /></div>
+      <div class="form-group"><label class="form-label">Distance (mi)</label><input type="number" class="form-input" id="workoutDistance" placeholder="0" step="0.1" /></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Effort</label>
+      <select class="form-select" id="workoutEffort">
+        <option>Easy</option><option>Moderate</option><option selected>Hard</option><option>Max</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-input" id="workoutNotes" placeholder="Optional" /></div>
+    <button class="btn btn-primary btn-full" onclick="saveWorkout()">Log Workout</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsEditModal">
+  <div class="modal">
+    <div class="modal-title" id="settingsEditTitle">Edit <button class="modal-close" onclick="closeModal('settingsEditModal')">&times;</button></div>
+    <div id="settingsEditBody"></div>
+    <button class="btn btn-primary btn-full" style="margin-top:14px;" onclick="saveSettingsEdit()">Save</button>
+  </div>
+</div>
+
 <script>
-  // Date header
-  const now = new Date();
-  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+// ============ DATA LAYER ============
+const today = () => new Date().toISOString().slice(0, 10);
 
-  // Screen switching
-  function switchScreen(name) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+function loadData(key, fallback) {
+  try { const d = localStorage.getItem('hf_' + key); return d ? JSON.parse(d) : fallback; }
+  catch { return fallback; }
+}
+function saveData(key, val) { localStorage.setItem('hf_' + key, JSON.stringify(val)); }
 
-    const screen = document.getElementById('screen-' + name);
-    if (screen) screen.classList.add('active');
+// Default settings
+const defaultSettings = {
+  name: 'Alex', units: 'imperial', height: "5'11\"", sex: 'Male',
+  activityLevel: 'Lightly Active', primaryGoal: 'Lose Weight',
+  targetRate: '1.0', goalWeight: 175, startWeight: 191,
+  secondaryGoals: ['Strength', 'Endurance'],
+  persona: 'Michael', responseLength: 'Medium', emojiUse: 'A Few',
+  stravaConnected: true, calorieGoal: 2100, proteinGoal: 155, carbsGoal: 210, fatGoal: 70,
+  notifications: { morning: true, breakfast: true, lunch: true, dinner: true, recap: true, weekly: false },
+  mealWindows: { breakfast: '7:00 AM - 9:00 AM', lunch: '12:00 PM - 1:00 PM', dinner: '6:00 PM - 8:00 PM' }
+};
 
-    const navItem = document.querySelector(`.nav-item[data-screen="${name}"]`);
-    if (navItem) navItem.classList.add('active');
+let settings = loadData('settings', defaultSettings);
+let meals = loadData('meals', []);
+let weights = loadData('weights', []);
+let workouts = loadData('workouts', []);
+let staples = loadData('staples', [
+  { name: 'Chicken & Rice Bowl', cals: 520, protein: 45, carbs: 48, fat: 14 },
+  { name: 'Protein Shake', cals: 280, protein: 35, carbs: 20, fat: 8 },
+  { name: 'Greek Yogurt Bowl', cals: 340, protein: 28, carbs: 38, fat: 12 },
+  { name: 'Salmon & Veggies', cals: 480, protein: 38, carbs: 22, fat: 24 },
+]);
+let chatHistory = loadData('chatHistory', [
+  { role: 'coach', text: "Hey! I'm Coach Michael. Tell me about your meals, workouts, or goals — or snap a photo of what you're eating and I'll estimate the macros." }
+]);
+
+function save() {
+  saveData('settings', settings);
+  saveData('meals', meals);
+  saveData('weights', weights);
+  saveData('workouts', workouts);
+  saveData('staples', staples);
+  saveData('chatHistory', chatHistory);
+}
+
+// Seed some weight data if empty
+if (weights.length === 0) {
+  const seed = [191,190.8,191.2,190.4,190,189.6,189.8,189.2,189.5,189,188.8,188.2,188.6,188,188.4,187.8,188,187.6,187.2,187.8,187.4];
+  const d = new Date(); d.setDate(d.getDate() - seed.length);
+  seed.forEach((w, i) => { const dd = new Date(d); dd.setDate(dd.getDate() + i); weights.push({ date: dd.toISOString().slice(0,10), weight: w, note: '' }); });
+  save();
+}
+
+// ============ HELPERS ============
+function todayMeals() { return meals.filter(m => m.date === today()); }
+function todayWorkouts() { return workouts.filter(w => w.date === today()); }
+function todayTotals() {
+  const tm = todayMeals();
+  return { cals: tm.reduce((s,m) => s+m.cals, 0), protein: tm.reduce((s,m) => s+m.protein, 0), carbs: tm.reduce((s,m) => s+m.carbs, 0), fat: tm.reduce((s,m) => s+m.fat, 0) };
+}
+function todayBurn() { return todayWorkouts().reduce((s,w) => s + (w.calsBurned||0), 0); }
+function estimateCalBurn(type, duration, effort) {
+  const base = { Running: 10, Cycling: 7, Swimming: 9, 'Weight Training': 6, HIIT: 11, Yoga: 3, Walking: 4, Other: 5 };
+  const mult = { Easy: 0.7, Moderate: 1, Hard: 1.3, Max: 1.5 };
+  const cw = weights.length ? weights[weights.length-1].weight : 185;
+  return Math.round((base[type]||5) * (mult[effort]||1) * duration * (cw / 150));
+}
+function formatDate(d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
+function getStreak() {
+  let streak = 0; const d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const ds = d.toISOString().slice(0,10);
+    if (meals.some(m => m.date === ds) || weights.some(w => w.date === ds)) streak++;
+    else break;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+// ============ SCREEN SWITCHING ============
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const screen = document.getElementById('screen-' + name);
+  if (screen) screen.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-screen="${name}"]`);
+  if (nav) nav.classList.add('active');
+  renderAll();
+}
+
+// ============ RENDER ============
+function renderAll() {
+  renderDashboard();
+  renderFoodLog();
+  renderWeightScreen();
+  renderWorkouts();
+  renderSettings();
+  renderChat();
+}
+
+function renderDashboard() {
+  const t = todayTotals();
+  const burn = todayBurn();
+  const goal = settings.calorieGoal;
+  const net = t.cals - burn;
+  const remaining = Math.max(0, goal - t.cals);
+  const pct = Math.min(1, t.cals / goal);
+  const offset = 314 - (314 * pct);
+
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('avatarInitials').textContent = settings.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+  // Streak
+  const streak = getStreak();
+  document.getElementById('streakBadge').innerHTML = streak > 0 ?
+    `<span class="streak-badge"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16c3.314 0 6-2 6-5.5 0-1.44-.669-2.97-1.53-4.32C11.6 4.87 10.42 3.64 9.5 2.5c-.17-.21-.5-.05-.43.2.47 1.6-.38 3.07-1.53 3.8-.14.09-.32-.02-.3-.18.13-1.07-.25-2.5-1.04-3.85C5.76 1.68 5.1 1.03 4.5.5c-.2-.18-.5.03-.4.27.43 1.07.09 2.43-.46 3.34C3.1 5.56 2 7.03 2 8.5 2 12.5 4.5 16 8 16z"/></svg>${streak}-day streak</span>` : '';
+
+  // Calories
+  document.getElementById('dashCalorieCard').innerHTML = `
+    <div class="card-title">Today's Calories</div>
+    <div class="calorie-ring-container">
+      <div class="calorie-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="calorie-ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="calorie-ring-fill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="${offset}" />
+        </svg>
+        <div class="calorie-ring-text">
+          <span class="cal-num">${t.cals.toLocaleString()}</span>
+          <span class="cal-label">of ${goal.toLocaleString()}</span>
+        </div>
+      </div>
+      <div class="calorie-info">
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--accent)"></span>Consumed</span><span style="font-weight:600">${t.cals.toLocaleString()}</span></div>
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--success)"></span>Burned</span><span style="font-weight:600">${burn}</span></div>
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--info)"></span>Net</span><span style="font-weight:600;color:${net <= goal ? 'var(--success)' : 'var(--danger)'}">${net.toLocaleString()}</span></div>
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--text-muted)"></span>Remaining</span><span style="font-weight:600;color:var(--accent)">${remaining}</span></div>
+      </div>
+    </div>`;
+
+  // Macros
+  const pp = Math.min(100, Math.round(t.protein/settings.proteinGoal*100));
+  const cp = Math.min(100, Math.round(t.carbs/settings.carbsGoal*100));
+  const fp = Math.min(100, Math.round(t.fat/settings.fatGoal*100));
+  document.getElementById('dashMacrosCard').innerHTML = `
+    <div class="card-title">Macros</div>
+    <div class="macros-row">
+      <div class="macro-item"><div class="macro-label">Protein</div><div class="macro-val" style="color:#22c55e">${t.protein}g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ ${settings.proteinGoal}g</span></div><div class="progress-bar"><div class="progress-bar-fill protein" style="width:${pp}%"></div></div></div>
+      <div class="macro-item"><div class="macro-label">Carbs</div><div class="macro-val" style="color:#3b82f6">${t.carbs}g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ ${settings.carbsGoal}g</span></div><div class="progress-bar"><div class="progress-bar-fill carbs" style="width:${cp}%"></div></div></div>
+      <div class="macro-item"><div class="macro-label">Fat</div><div class="macro-val" style="color:#ef4444">${t.fat}g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ ${settings.fatGoal}g</span></div><div class="progress-bar"><div class="progress-bar-fill fat" style="width:${fp}%"></div></div></div>
+    </div>`;
+
+  // Weight
+  const cw = weights.length ? weights[weights.length-1].weight : '--';
+  const gw = settings.goalWeight;
+  const dist = weights.length ? (cw - gw).toFixed(1) : '--';
+  const weekAgo = weights.length > 7 ? (cw - weights[weights.length-7].weight).toFixed(1) : null;
+  document.getElementById('dashWeightCurrent').innerHTML = `${cw} <span style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">${settings.units==='imperial'?'lbs':'kg'}</span>`;
+  document.getElementById('dashWeightChange').innerHTML = weekAgo !== null ? `<span class="chip ${parseFloat(weekAgo)<=0?'chip-success':'chip-danger'}">${weekAgo>0?'+':''}${weekAgo} lbs this week</span>` : '';
+  document.getElementById('dashGoalLabel').textContent = `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}`;
+  document.getElementById('dashGoalDist').textContent = `${dist} ${settings.units==='imperial'?'lbs':'kg'} to go`;
+
+  // Today workout
+  const tw = todayWorkouts();
+  if (tw.length > 0) {
+    const w = tw[tw.length-1];
+    document.getElementById('dashWorkoutCard').innerHTML = `
+      <div class="card-title">Today's Workout</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="workout-icon" style="background:rgba(59,130,246,0.15)"><svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+        <div style="flex:1"><div class="workout-name">${w.type}</div><div class="workout-meta">${w.duration} min${w.distance ? ' · '+w.distance+' mi' : ''} · ${w.effort}</div></div>
+        <div class="workout-cal">${w.calsBurned}<span>kcal burned</span></div>
+      </div>`;
+  } else {
+    document.getElementById('dashWorkoutCard').innerHTML = `
+      <div class="card-title">Today's Workout</div>
+      <div style="text-align:center;padding:12px 0;color:var(--text-muted);font-size:0.88rem;">No workout logged today</div>
+      <button class="btn btn-secondary btn-full btn-sm" onclick="switchScreen('workouts')">Log Workout</button>`;
   }
 
-  // Photo handling
-  let pendingPhoto = null;
+  // Coach insight
+  const insights = [
+    `<strong>Your deficit is on track.</strong> You've consumed ${t.cals} of ${goal} calories. ${remaining > 0 ? `You have ${remaining} left for the day — keep protein high.` : 'You\'ve hit your limit. Stay the course.'}`,
+    `<strong>${t.protein}g protein so far.</strong> ${t.protein >= settings.proteinGoal * 0.7 ? 'Great pace on protein today.' : `You need ${settings.proteinGoal - t.protein}g more — prioritize protein at your next meal.`}`,
+    burn > 0 ? `<strong>${burn} calories burned today.</strong> That effort earns you some flexibility — use it wisely at dinner.` : `<strong>Rest day vibes.</strong> No workout logged yet. Your calorie goal is set for a lower-burn day.`
+  ];
+  document.getElementById('dashCoachInsight').innerHTML = insights[Math.floor(Date.now()/86400000) % insights.length];
 
-  function handlePhotoSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  drawWeightChart('weightMiniChart', 160);
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      pendingPhoto = { dataUrl: e.target.result, name: file.name };
-      document.getElementById('chatPhotoThumb').src = e.target.result;
-      document.getElementById('chatPhotoName').textContent = file.name;
-      document.getElementById('chatPhotoPreview').classList.add('visible');
-    };
-    reader.readAsDataURL(file);
-  }
+function renderFoodLog() {
+  const t = todayTotals();
+  document.getElementById('foodCalSummary').textContent = `${t.cals} / ${settings.calorieGoal} kcal`;
 
-  function removePhoto() {
-    pendingPhoto = null;
-    document.getElementById('chatPhotoPreview').classList.remove('visible');
-    document.getElementById('chatPhotoInput').value = '';
-  }
+  // Staples
+  document.getElementById('stapleSection').innerHTML = `
+    <div class="card-title">Staple Meals</div>
+    <div class="staple-grid">${staples.map((s, i) => `
+      <div class="staple-card" onclick="quickAddStaple(${i})">
+        <div class="staple-name">${s.name}</div>
+        <div class="staple-info">${s.cals} kcal · ${s.protein}g P</div>
+      </div>`).join('')}
+    </div>`;
 
-  // Simple chat send
-  function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    const hasPhoto = !!pendingPhoto;
-
-    if (!text && !hasPhoto) return;
-
-    const messages = document.getElementById('chatMessages');
-    const userMsg = document.createElement('div');
-    userMsg.className = 'chat-msg user';
-
-    if (hasPhoto) {
-      const img = document.createElement('img');
-      img.src = pendingPhoto.dataUrl;
-      img.className = 'chat-msg-img';
-      img.alt = 'Meal photo';
-      userMsg.appendChild(img);
-    }
-
-    if (text) {
-      const textNode = document.createElement('div');
-      textNode.textContent = text;
-      userMsg.appendChild(textNode);
-    } else if (hasPhoto) {
-      const textNode = document.createElement('div');
-      textNode.textContent = 'What do you think of this meal?';
-      userMsg.appendChild(textNode);
-    }
-
-    messages.appendChild(userMsg);
-    input.value = '';
-
-    const photoSent = hasPhoto;
-    removePhoto();
-
-    setTimeout(() => {
-      const coachMsg = document.createElement('div');
-      coachMsg.className = 'chat-msg coach';
-      coachMsg.innerHTML = photoSent ? getPhotoResponse(text) : getCoachResponse(text);
-      messages.appendChild(coachMsg);
-      messages.scrollTop = messages.scrollHeight;
-    }, 1200);
-
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function getPhotoResponse(text) {
-    return `Here's what I'm seeing:<br><br>` +
-      `<strong>Identified:</strong> Grilled chicken breast (~6oz), brown rice (~3/4 cup), steamed broccoli with olive oil drizzle<br><br>` +
-      `<strong>Estimated breakdown:</strong><br>` +
-      `&bull; Calories: ~480 kcal<br>` +
-      `&bull; Protein: 42g<br>` +
-      `&bull; Carbs: 38g<br>` +
-      `&bull; Fat: 16g<br>` +
-      `&bull; Fiber: 5g<br><br>` +
-      `That's a solid, balanced meal. High protein, clean carbs. This would put you at 1,960 for the day — right under your 2,100 target with room for a light snack later.<br><br>` +
-      `<em style="font-size:0.78rem;color:var(--text-muted);">AI estimates may not be exact. Adjust as needed.</em>`;
-  }
-
-  function getCoachResponse(text) {
-    const lower = text.toLowerCase();
-    if (lower.includes('protein') || lower.includes('macro')) {
-      return "You're at 98g of protein so far today — about 63% of your 155g target. For dinner, aim for something with at least 40g of protein. Grilled chicken, salmon, or a lean steak would close the gap nicely.";
-    }
-    if (lower.includes('snack') || lower.includes('hungry')) {
-      return "If you're hungry before dinner, go for something high-protein and low-cal. A few options that fit your remaining budget:<br><br>• Turkey roll-ups with mustard (~80 cal, 12g protein)<br>• String cheese (~80 cal, 7g protein)<br>• Hard boiled egg (~70 cal, 6g protein)<br><br>Keep it light — you want room for a proper dinner.";
-    }
-    if (lower.includes('week') || lower.includes('plan') || lower.includes('focus')) {
-      return "Here's the game plan for the week ahead:<br><br><strong>1. Keep the deficit consistent</strong> — you've been averaging -750 cal/day, which is right on pace for 1.0 lbs/week.<br><br><strong>2. Hit protein 4 out of 7 days</strong> — you've been landing around 130g, but your target is 155g. That extra 25g matters for recovery.<br><br><strong>3. Don't skip rest days</strong> — you had 4 solid workouts last week. Keep the balance.";
-    }
-    return "That's a solid question. Based on your data today — 1,480 calories consumed, 380 burned from the run, 620 remaining — you're in a strong position. Stay consistent with what you've been doing and you'll keep the trend moving in the right direction.";
-  }
-
-  // Chat input enter key
-  document.getElementById('chatInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendMessage();
-  });
-
-  // Simple weight chart using Canvas
-  function drawWeightChart(canvasId, height) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = (height || rect.height) * dpr;
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = (height || rect.height) + 'px';
-    ctx.scale(dpr, dpr);
-
-    const w = rect.width;
-    const h = height || rect.height;
-    const padding = { top: 10, right: 10, bottom: 25, left: 40 };
-    const chartW = w - padding.left - padding.right;
-    const chartH = h - padding.top - padding.bottom;
-
-    // Data
-    const weights = [191.0, 190.8, 191.2, 190.4, 190.0, 189.6, 189.8, 189.2, 189.5, 189.0,
-                     188.8, 188.2, 188.6, 188.0, 188.4, 187.8, 188.0, 187.6, 187.2, 187.8,
-                     187.4, 187.6, 187.0, 187.2, 186.8, 187.4, 187.0, 187.4];
-    const goalWeight = 175;
-    const minW = Math.min(goalWeight - 1, Math.min(...weights) - 1);
-    const maxW = Math.max(...weights) + 1;
-
-    const xStep = chartW / (weights.length - 1);
-    const yScale = (v) => padding.top + chartH - ((v - minW) / (maxW - minW)) * chartH;
-
-    // Grid lines
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 0.5;
-    for (let v = Math.ceil(minW); v <= Math.floor(maxW); v += 2) {
-      const y = yScale(v);
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(w - padding.right, y);
-      ctx.stroke();
-      ctx.fillStyle = '#737373';
-      ctx.font = '10px Inter';
-      ctx.textAlign = 'right';
-      ctx.fillText(v, padding.left - 6, y + 3);
-    }
-
-    // Goal line (dashed)
-    const goalY = yScale(goalWeight);
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padding.left, goalY);
-    ctx.lineTo(w - padding.right, goalY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Weight line
-    ctx.strokeStyle = '#f5f5f5';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    weights.forEach((v, i) => {
-      const x = padding.left + i * xStep;
-      const y = yScale(v);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  // Today's meals grouped
+  const tm = todayMeals();
+  const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+  let html = '';
+  groups.forEach(g => {
+    const items = tm.filter(m => m.meal === g);
+    const totalCals = items.reduce((s, m) => s + m.cals, 0);
+    html += `<div class="meal-section"><div class="meal-header"><h3>${g}</h3><span class="meal-cals">${items.length ? totalCals + ' kcal' : 'Not logged'}</span></div>`;
+    items.forEach(item => {
+      html += `<div class="food-item">
+        <div><div class="food-item-name">${item.name}</div><div class="food-item-macros">${item.protein}g P · ${item.carbs}g C · ${item.fat}g F</div></div>
+        <div style="display:flex;align-items:center;gap:6px;"><span class="food-item-cals">${item.cals} kcal</span><button class="food-item-delete" onclick="deleteFood('${item.id}')">&times;</button></div>
+      </div>`;
     });
-    ctx.stroke();
+    if (!items.length) {
+      html += `<button class="add-meal-btn" onclick="openFoodModal('text','${g}')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add ${g}</button>`;
+    }
+    html += '</div>';
+  });
+  document.getElementById('foodLog').innerHTML = html;
+}
 
-    // Gradient fill
-    const gradient = ctx.createLinearGradient(0, padding.top, 0, h);
-    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.15)');
-    gradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    weights.forEach((v, i) => {
-      const x = padding.left + i * xStep;
-      const y = yScale(v);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.lineTo(padding.left + (weights.length - 1) * xStep, h - padding.bottom);
-    ctx.lineTo(padding.left, h - padding.bottom);
-    ctx.closePath();
-    ctx.fill();
+function renderWeightScreen() {
+  const cw = weights.length ? weights[weights.length-1].weight : settings.startWeight;
+  const gw = settings.goalWeight;
+  const sw = settings.startWeight;
+  const totalChange = (cw - sw).toFixed(1);
+  const prevDay = weights.length > 1 ? weights[weights.length-2].weight : cw;
+  const dayChange = (cw - prevDay).toFixed(1);
 
-    // Current point
-    const lastX = padding.left + (weights.length - 1) * xStep;
-    const lastY = yScale(weights[weights.length - 1]);
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = var_bg;
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+  document.getElementById('weightInput').value = cw;
+  document.getElementById('weightUnit').textContent = settings.units === 'imperial' ? 'lbs' : 'kg';
+  document.getElementById('weightTotalChange').innerHTML = `<span class="chip ${parseFloat(totalChange)<=0?'chip-success':'chip-danger'}">${totalChange>0?'+':''}${totalChange} lbs total</span>`;
+  document.getElementById('weightDayChange').innerHTML = `<span style="color:${parseFloat(dayChange)<=0?'var(--success)':'var(--danger)'}">${dayChange>0?'+':''}${dayChange} lbs from yesterday</span>`;
+  document.getElementById('weightGoalLabel').textContent = `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}`;
+
+  // Stats
+  const rate = weights.length > 7 ? ((cw - weights[weights.length - 7].weight) / 1).toFixed(1) : '--';
+  const daysToGoal = rate < 0 ? Math.ceil((cw - gw) / Math.abs(rate) * 7) : '--';
+  const goalDate = typeof daysToGoal === 'number' ? new Date(Date.now() + daysToGoal * 86400000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '--';
+  document.getElementById('weightStats').innerHTML = `
+    <div class="card-title">Stats</div>
+    <div class="stat-row"><span class="stat-label">Starting Weight</span><span class="stat-value">${sw} lbs</span></div>
+    <div class="stat-row"><span class="stat-label">Current Weight</span><span class="stat-value">${cw} lbs</span></div>
+    <div class="stat-row"><span class="stat-label">Goal Weight</span><span class="stat-value" style="color:var(--accent)">${gw} lbs</span></div>
+    <div class="stat-row"><span class="stat-label">Rate</span><span class="stat-value" style="color:${parseFloat(rate)<=0?'var(--success)':'var(--danger)'}">${rate} lbs/week</span></div>
+    <div class="stat-row"><span class="stat-label">Est. Goal Date</span><span class="stat-value">${goalDate}</span></div>`;
+
+  // Recent entries
+  const recent = [...weights].reverse().slice(0, 10);
+  let entriesHtml = '<div class="card"><div class="card-title">Recent Entries</div>';
+  recent.forEach(w => {
+    entriesHtml += `<div class="stat-row"><span class="stat-label">${formatDate(w.date)}${w.note ? ' — '+w.note : ''}</span><span class="stat-value">${w.weight} lbs</span></div>`;
+  });
+  entriesHtml += '</div>';
+  document.getElementById('weightEntries').innerHTML = entriesHtml;
+
+  drawWeightChart('weightChart', 200);
+}
+
+function renderWorkouts() {
+  const all = [...workouts].reverse();
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const thisWeek = workouts.filter(w => new Date(w.date) >= weekAgo);
+  const totalBurn = thisWeek.reduce((s,w) => s + (w.calsBurned||0), 0);
+  const totalDur = thisWeek.reduce((s,w) => s + (w.duration||0), 0);
+  const totalDist = thisWeek.reduce((s,w) => s + (parseFloat(w.distance)||0), 0);
+
+  document.getElementById('workoutSummary').innerHTML = `
+    <div class="summary-item"><div class="summary-value">${thisWeek.length}</div><div class="summary-label">This Week</div></div>
+    <div class="summary-item"><div class="summary-value" style="color:var(--accent)">${totalBurn.toLocaleString()}</div><div class="summary-label">Calories Burned</div></div>
+    <div class="summary-item"><div class="summary-value">${Math.floor(totalDur/60)}h ${totalDur%60}m</div><div class="summary-label">Duration</div></div>
+    <div class="summary-item"><div class="summary-value">${totalDist.toFixed(1)} mi</div><div class="summary-label">Distance</div></div>`;
+
+  const colors = { Running:'#3b82f6', Cycling:'#22c55e', Swimming:'#06b6d4', 'Weight Training':'#a855f7', HIIT:'#ef4444', Yoga:'#8b5cf6', Walking:'#f59e0b', Other:'#737373' };
+  document.getElementById('workoutList').innerHTML = all.length === 0
+    ? '<div class="card" style="text-align:center;color:var(--text-muted);padding:30px;">No workouts logged yet.<br>Tap "+ Log Workout" to get started.</div>'
+    : all.map(w => `
+    <div class="workout-item">
+      <div class="workout-icon" style="background:${colors[w.type]||'#737373'}22">
+        <svg width="22" height="22" fill="none" stroke="${colors[w.type]||'#737373'}" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <div class="workout-details">
+        <div class="workout-name">${w.type}</div>
+        <div class="workout-meta">${formatDate(w.date)} · ${w.duration} min${w.distance ? ' · '+w.distance+' mi' : ''}</div>
+      </div>
+      <div class="workout-cal">${w.calsBurned}<span>kcal</span></div>
+    </div>`).join('');
+}
+
+function renderSettings() {
+  const s = settings;
+  const n = s.notifications;
+  document.getElementById('settingsContent').innerHTML = `
+    <div class="settings-section">
+      <div class="settings-label">Profile</div>
+      <div class="settings-row" onclick="editSetting('name')"><span class="settings-row-label">Name</span><span class="settings-row-value">${s.name}</span></div>
+      <div class="settings-row" onclick="editSetting('units')"><span class="settings-row-label">Units</span><span class="settings-row-value">${s.units==='imperial'?'Imperial (lbs)':'Metric (kg)'}</span></div>
+      <div class="settings-row" onclick="editSetting('height')"><span class="settings-row-label">Height</span><span class="settings-row-value">${s.height}</span></div>
+      <div class="settings-row" onclick="editSetting('activityLevel')"><span class="settings-row-label">Activity Level</span><span class="settings-row-value">${s.activityLevel}</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Goals</div>
+      <div class="settings-row" onclick="editSetting('primaryGoal')"><span class="settings-row-label">Primary Goal</span><span class="settings-row-value">${s.primaryGoal}</span></div>
+      <div class="settings-row" onclick="editSetting('targetRate')"><span class="settings-row-label">Target Rate</span><span class="settings-row-value">${s.targetRate} lbs/week</span></div>
+      <div class="settings-row" onclick="editSetting('goalWeight')"><span class="settings-row-label">Goal Weight</span><span class="settings-row-value">${s.goalWeight} lbs</span></div>
+      <div class="settings-row" onclick="editSetting('calorieGoal')"><span class="settings-row-label">Calorie Goal</span><span class="settings-row-value">${s.calorieGoal} kcal</span></div>
+      <div class="settings-row" onclick="editSetting('proteinGoal')"><span class="settings-row-label">Protein Goal</span><span class="settings-row-value">${s.proteinGoal}g</span></div>
+      <div class="settings-row" onclick="editSetting('carbsGoal')"><span class="settings-row-label">Carbs Goal</span><span class="settings-row-value">${s.carbsGoal}g</span></div>
+      <div class="settings-row" onclick="editSetting('fatGoal')"><span class="settings-row-label">Fat Goal</span><span class="settings-row-value">${s.fatGoal}g</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">AI Coach</div>
+      <div class="settings-row" onclick="editSetting('persona')"><span class="settings-row-label">Persona</span><span class="settings-row-value" style="color:var(--${s.persona.toLowerCase()}-color)">${s.persona}</span></div>
+      <div class="settings-row" onclick="editSetting('responseLength')"><span class="settings-row-label">Response Length</span><span class="settings-row-value">${s.responseLength}</span></div>
+      <div class="settings-row" onclick="editSetting('emojiUse')"><span class="settings-row-label">Emoji Use</span><span class="settings-row-value">${s.emojiUse}</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Notifications</div>
+      ${Object.entries({ morning:'Morning Check-in', breakfast:'Breakfast Reminder', lunch:'Lunch Reminder', dinner:'Dinner Reminder', recap:'Day Recap', weekly:'Weekly Summary' }).map(([k,v]) => `
+        <div class="settings-row"><span class="settings-row-label">${v}</span><div class="toggle-track ${n[k]?'on':''}" onclick="toggleNotif('${k}',this)"></div></div>`).join('')}
+    </div>
+    <button class="btn btn-secondary btn-full" style="color:var(--danger);margin-top:10px;" onclick="if(confirm('Reset all data?')){localStorage.clear();location.reload();}">Reset All Data</button>`;
+}
+
+function renderChat() {
+  const el = document.getElementById('chatMessages');
+  el.innerHTML = chatHistory.map(m => {
+    let content = '';
+    if (m.image) content += `<img class="chat-msg-img" src="${m.image}" alt="Photo" />`;
+    content += m.text;
+    return `<div class="chat-msg ${m.role === 'coach' ? 'coach' : 'user'}">${content}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+
+  const persona = settings.persona;
+  document.getElementById('chatCoachName').textContent = 'Coach ' + persona;
+  const descs = { Jillian: 'Direct, no-nonsense, pushes hard', Michael: 'Balanced, real, and grounded', Tiara: 'Warm, supportive, and gentle' };
+  document.getElementById('chatCoachDesc').textContent = descs[persona] || '';
+}
+
+// ============ ACTIONS ============
+function openFoodModal(mode, meal) {
+  document.getElementById('foodPhotoGroup').style.display = mode === 'photo' ? 'block' : 'none';
+  document.getElementById('foodMealType').value = meal || 'Breakfast';
+  ['foodDesc','foodName','foodCals','foodProtein','foodCarbs','foodFat'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('foodSaveStaple').checked = false;
+  document.getElementById('foodModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function saveFood() {
+  const name = document.getElementById('foodName').value || document.getElementById('foodDesc').value || 'Unnamed';
+  const entry = {
+    id: Date.now().toString(), date: today(), meal: document.getElementById('foodMealType').value,
+    name, desc: document.getElementById('foodDesc').value,
+    cals: parseInt(document.getElementById('foodCals').value) || 0,
+    protein: parseInt(document.getElementById('foodProtein').value) || 0,
+    carbs: parseInt(document.getElementById('foodCarbs').value) || 0,
+    fat: parseInt(document.getElementById('foodFat').value) || 0,
+  };
+  meals.push(entry);
+  if (document.getElementById('foodSaveStaple').checked && entry.cals > 0) {
+    staples.push({ name: entry.name, cals: entry.cals, protein: entry.protein, carbs: entry.carbs, fat: entry.fat });
+  }
+  save(); closeModal('foodModal'); renderAll();
+}
+
+function deleteFood(id) {
+  meals = meals.filter(m => m.id !== id);
+  save(); renderAll();
+}
+
+function quickAddStaple(i) {
+  const s = staples[i];
+  meals.push({
+    id: Date.now().toString(), date: today(), meal: guessNextMeal(),
+    name: s.name, desc: '', cals: s.cals, protein: s.protein, carbs: s.carbs, fat: s.fat
+  });
+  save(); renderAll();
+}
+
+function guessNextMeal() {
+  const h = new Date().getHours();
+  const logged = todayMeals().map(m => m.meal);
+  if (h < 11 && !logged.includes('Breakfast')) return 'Breakfast';
+  if (h < 15 && !logged.includes('Lunch')) return 'Lunch';
+  if (h < 21 && !logged.includes('Dinner')) return 'Dinner';
+  return 'Snack';
+}
+
+function logWeight() {
+  const w = parseFloat(document.getElementById('weightInput').value);
+  if (!w) return;
+  const note = document.getElementById('weightNote').value;
+  const existing = weights.findIndex(e => e.date === today());
+  if (existing >= 0) { weights[existing] = { date: today(), weight: w, note }; }
+  else { weights.push({ date: today(), weight: w, note }); }
+  document.getElementById('weightNote').value = '';
+  save(); renderAll();
+}
+
+function openWorkoutModal() {
+  const types = ['Running','Cycling','Swimming','Weight Training','HIIT','Yoga','Walking','Other'];
+  document.getElementById('workoutTypeGrid').innerHTML = types.map(t =>
+    `<div class="workout-type-btn" onclick="selectWorkoutType(this,'${t}')">${t}</div>`).join('');
+  ['workoutDuration','workoutDistance','workoutNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('workoutModal').classList.add('open');
+}
+let selectedWorkoutType = 'Running';
+function selectWorkoutType(el, type) {
+  document.querySelectorAll('.workout-type-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedWorkoutType = type;
+}
+
+function saveWorkout() {
+  const dur = parseInt(document.getElementById('workoutDuration').value) || 0;
+  if (!dur) return;
+  const effort = document.getElementById('workoutEffort').value;
+  const entry = {
+    id: Date.now().toString(), date: today(), type: selectedWorkoutType,
+    duration: dur, distance: document.getElementById('workoutDistance').value || '',
+    effort, notes: document.getElementById('workoutNotes').value,
+    calsBurned: estimateCalBurn(selectedWorkoutType, dur, effort)
+  };
+  workouts.push(entry);
+  save(); closeModal('workoutModal'); renderAll();
+}
+
+// Settings edit
+let currentEditField = '';
+function editSetting(field) {
+  currentEditField = field;
+  const labels = { name:'Name', units:'Units', height:'Height', activityLevel:'Activity Level', primaryGoal:'Primary Goal', targetRate:'Target Rate (lbs/week)', goalWeight:'Goal Weight', calorieGoal:'Daily Calorie Goal', proteinGoal:'Protein Goal (g)', carbsGoal:'Carbs Goal (g)', fatGoal:'Fat Goal (g)', persona:'Coach Persona', responseLength:'Response Length', emojiUse:'Emoji Use' };
+  document.getElementById('settingsEditTitle').innerHTML = `Edit ${labels[field]||field} <button class="modal-close" onclick="closeModal('settingsEditModal')">&times;</button>`;
+
+  const selects = {
+    units: ['imperial','metric'], activityLevel: ['Sedentary','Lightly Active','Moderately Active'],
+    primaryGoal: ['Lose Weight','Maintain Weight','Gain Weight'],
+    persona: ['Jillian','Michael','Tiara'], responseLength: ['Short','Medium','Long'],
+    emojiUse: ['None','A Few','Lots']
+  };
+
+  if (selects[field]) {
+    document.getElementById('settingsEditBody').innerHTML = `<select class="form-select" id="settingsEditVal">${selects[field].map(o => `<option ${settings[field]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  } else {
+    const type = ['goalWeight','calorieGoal','proteinGoal','carbsGoal','fatGoal'].includes(field) ? 'number' : 'text';
+    document.getElementById('settingsEditBody').innerHTML = `<input type="${type}" class="form-input" id="settingsEditVal" value="${settings[field]}" />`;
+  }
+  document.getElementById('settingsEditModal').classList.add('open');
+}
+function saveSettingsEdit() {
+  let val = document.getElementById('settingsEditVal').value;
+  if (['goalWeight','calorieGoal','proteinGoal','carbsGoal','fatGoal'].includes(currentEditField)) val = parseFloat(val);
+  settings[currentEditField] = val;
+  save(); closeModal('settingsEditModal'); renderAll();
+}
+function toggleNotif(key, el) {
+  settings.notifications[key] = !settings.notifications[key];
+  el.classList.toggle('on');
+  save();
+}
+
+// Chat
+let pendingPhoto = null;
+function handlePhotoSelect(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    pendingPhoto = { dataUrl: ev.target.result, name: file.name };
+    document.getElementById('chatPhotoThumb').src = ev.target.result;
+    document.getElementById('chatPhotoName').textContent = file.name;
+    document.getElementById('chatPhotoPreview').classList.add('visible');
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto() {
+  pendingPhoto = null;
+  document.getElementById('chatPhotoPreview').classList.remove('visible');
+  document.getElementById('chatPhotoInput').value = '';
+}
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  const hasPhoto = !!pendingPhoto;
+  if (!text && !hasPhoto) return;
+
+  const msg = { role: 'user', text: text || (hasPhoto ? 'What do you think of this meal?' : ''), image: hasPhoto ? pendingPhoto.dataUrl : null };
+  chatHistory.push(msg);
+  input.value = '';
+  const photoSent = hasPhoto;
+  removePhoto();
+
+  setTimeout(() => {
+    const resp = { role: 'coach', text: photoSent ? getPhotoResponse(text) : getCoachResponse(text) };
+    chatHistory.push(resp);
+    save(); renderChat();
+  }, 600);
+  save(); renderChat();
+}
+
+function getCoachResponse(text) {
+  const t = todayTotals(); const burn = todayBurn();
+  const lower = text.toLowerCase();
+  if (lower.includes('protein') || lower.includes('macro'))
+    return `You're at ${t.protein}g of protein — ${Math.round(t.protein/settings.proteinGoal*100)}% of your ${settings.proteinGoal}g target. ${t.protein < settings.proteinGoal*0.7 ? 'Prioritize protein at your next meal. Chicken, fish, or a shake would help close the gap.' : 'Solid progress. One more protein-rich meal and you\'re there.'}`;
+  if (lower.includes('snack') || lower.includes('hungry'))
+    return 'If you\'re hungry, go high-protein and low-cal:<br><br>- Turkey roll-ups with mustard (~80 cal, 12g P)<br>- String cheese (~80 cal, 7g P)<br>- Hard boiled egg (~70 cal, 6g P)<br><br>Keep it light so you have room for a proper meal.';
+  if (lower.includes('week') || lower.includes('plan') || lower.includes('focus'))
+    return `Here's the game plan:<br><br><strong>1. Stay in deficit</strong> — you're at ${settings.calorieGoal} cal/day target.<br><strong>2. Hit protein</strong> — ${settings.proteinGoal}g daily for recovery.<br><strong>3. Stay active</strong> — ${todayWorkouts().length > 0 ? 'Good work today.' : 'Try to get a workout in.'}<br><br>Consistency beats perfection. Keep showing up.`;
+  if (lower.includes('dinner') || lower.includes('eat') || lower.includes('meal'))
+    return `You've got ${Math.max(0, settings.calorieGoal - t.cals)} calories remaining. For dinner, aim for a protein-forward meal — grilled chicken, fish, or lean steak with vegetables. Skip heavy sauces and you'll finish the day strong.`;
+  const remaining = settings.calorieGoal - t.cals;
+  return `Here's where you stand: ${t.cals} calories consumed, ${burn} burned${burn>0?'':' (no workout yet)'}. You have ${remaining > 0 ? remaining + ' calories left' : 'hit your limit'}. ${t.protein < settings.proteinGoal*0.7 ? 'Focus on protein at your next meal.' : 'Macros are looking solid. Stay the course.'}`;
+}
+
+function getPhotoResponse() {
+  return `Here's what I'm seeing:<br><br><strong>Identified:</strong> Grilled chicken breast (~6oz), brown rice (~3/4 cup), steamed broccoli with olive oil<br><br><strong>Estimated breakdown:</strong><br>- Calories: ~480 kcal<br>- Protein: 42g<br>- Carbs: 38g<br>- Fat: 16g<br>- Fiber: 5g<br><br>Solid meal — high protein, clean carbs. Want me to log this for you?<br><br><em style="font-size:0.78rem;color:var(--text-muted);">AI estimates may not be exact. Adjust as needed.</em>`;
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+// Weight chart
+function drawWeightChart(canvasId, height) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !canvas.parentElement) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width, h = height;
+  const pad = { top: 10, right: 10, bottom: 25, left: 40 };
+  const cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
+
+  const data = weights.slice(-28).map(e => e.weight);
+  if (!data.length) return;
+  const gw = settings.goalWeight;
+  const minW = Math.min(gw - 1, Math.min(...data) - 1);
+  const maxW = Math.max(...data) + 1;
+  const xStep = data.length > 1 ? cw / (data.length - 1) : cw;
+  const yScale = v => pad.top + ch - ((v - minW) / (maxW - minW)) * ch;
+
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 0.5;
+  for (let v = Math.ceil(minW); v <= Math.floor(maxW); v += 2) {
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#737373'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(v, pad.left - 6, y + 3);
   }
 
-  const var_bg = '#1a1a1a';
+  const goalY = yScale(gw);
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, goalY); ctx.lineTo(w - pad.right, goalY); ctx.stroke();
+  ctx.setLineDash([]);
 
-  // Draw charts on load
-  window.addEventListener('load', () => {
-    drawWeightChart('weightMiniChart', 160);
-    drawWeightChart('weightChart', 200);
-  });
-  window.addEventListener('resize', () => {
-    drawWeightChart('weightMiniChart', 160);
-    drawWeightChart('weightChart', 200);
-  });
+  ctx.strokeStyle = '#f5f5f5'; ctx.lineWidth = 2; ctx.beginPath();
+  data.forEach((v, i) => { const x = pad.left + i * xStep; i === 0 ? ctx.moveTo(x, yScale(v)) : ctx.lineTo(x, yScale(v)); });
+  ctx.stroke();
 
-  // Time tabs
-  document.querySelectorAll('.time-tabs').forEach(group => {
-    group.querySelectorAll('.time-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        group.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-      });
-    });
-  });
+  const grad = ctx.createLinearGradient(0, pad.top, 0, h);
+  grad.addColorStop(0, 'rgba(245,158,11,0.15)'); grad.addColorStop(1, 'rgba(245,158,11,0)');
+  ctx.fillStyle = grad; ctx.beginPath();
+  data.forEach((v, i) => { const x = pad.left + i * xStep; i === 0 ? ctx.moveTo(x, yScale(v)) : ctx.lineTo(x, yScale(v)); });
+  ctx.lineTo(pad.left + (data.length - 1) * xStep, h - pad.bottom);
+  ctx.lineTo(pad.left, h - pad.bottom); ctx.closePath(); ctx.fill();
+
+  const lx = pad.left + (data.length - 1) * xStep, ly = yScale(data[data.length - 1]);
+  ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI * 2); ctx.fill();
+}
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// Init
+renderAll();
+window.addEventListener('resize', () => { drawWeightChart('weightMiniChart', 160); drawWeightChart('weightChart', 200); });
 </script>
-
 </body>
 </html>
