@@ -421,9 +421,32 @@
         </div>
         <input type="hidden" id="obUnits" value="imperial" />
       </div>
-      <div class="form-group">
+      <div class="form-group" id="obHeightGroup">
         <label class="form-label">Height</label>
-        <input type="text" class="form-input" id="obHeight" placeholder="e.g. 5'11 or 180cm" />
+        <div id="obHeightImperial" style="display:flex;gap:10px;">
+          <div style="flex:1;">
+            <select class="form-select" id="obHeightFeet">
+              <option value="">ft</option>
+              <option value="4">4 ft</option>
+              <option value="5" selected>5 ft</option>
+              <option value="6">6 ft</option>
+              <option value="7">7 ft</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <select class="form-select" id="obHeightInches">
+              <option value="">in</option>
+              <option value="0">0 in</option><option value="1">1 in</option><option value="2">2 in</option>
+              <option value="3">3 in</option><option value="4">4 in</option><option value="5">5 in</option>
+              <option value="6">6 in</option><option value="7">7 in</option><option value="8">8 in</option>
+              <option value="9">9 in</option><option value="10">10 in</option><option value="11">11 in</option>
+            </select>
+          </div>
+        </div>
+        <div id="obHeightMetric" style="display:none;">
+          <input type="number" class="form-input" id="obHeightCm" placeholder="e.g. 180" />
+        </div>
+        <input type="hidden" id="obHeight" />
         <div class="ob-error" id="obHeightErr">Please enter your height</div>
       </div>
       <div class="form-row">
@@ -1072,6 +1095,8 @@ function obSelectOption(el, hiddenId, value) {
   // Update unit labels when units change
   if (hiddenId === 'obUnits') {
     document.getElementById('obWeightUnitLabel').textContent = value === 'imperial' ? '(lbs)' : '(kg)';
+    document.getElementById('obHeightImperial').style.display = value === 'imperial' ? 'flex' : 'none';
+    document.getElementById('obHeightMetric').style.display = value === 'imperial' ? 'none' : 'block';
   }
 }
 
@@ -1105,8 +1130,22 @@ function obValidateStep(step) {
   document.querySelectorAll('.ob-error').forEach(e => e.classList.remove('visible'));
   if (step === 1) {
     let valid = true;
-    if (!document.getElementById('obHeight').value.trim()) {
-      document.getElementById('obHeightErr').classList.add('visible'); valid = false;
+    const isImperial = document.getElementById('obUnits').value === 'imperial';
+    if (isImperial) {
+      const ft = document.getElementById('obHeightFeet').value;
+      const inches = document.getElementById('obHeightInches').value;
+      if (!ft || inches === '') {
+        document.getElementById('obHeightErr').classList.add('visible'); valid = false;
+      } else {
+        document.getElementById('obHeight').value = ft + "'" + inches + '"';
+      }
+    } else {
+      const cm = document.getElementById('obHeightCm').value;
+      if (!cm) {
+        document.getElementById('obHeightErr').classList.add('visible'); valid = false;
+      } else {
+        document.getElementById('obHeight').value = cm + 'cm';
+      }
     }
     if (!document.getElementById('obWeight').value) {
       document.getElementById('obWeightErr').classList.add('visible'); valid = false;
