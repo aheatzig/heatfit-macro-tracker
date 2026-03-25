@@ -569,12 +569,53 @@ const defaultSettings = {
   targetRate: '1.0', goalWeight: 175, startWeight: 191,
   secondaryGoals: ['Strength', 'Endurance'],
   persona: 'Michael', responseLength: 'Medium', emojiUse: 'A Few',
-  stravaConnected: true, calorieGoal: 2100, proteinGoal: 155, carbsGoal: 210, fatGoal: 70,
+  stravaConnected: true, age: 30, manualMacros: false,
   notifications: { morning: true, breakfast: true, lunch: true, dinner: true, recap: true, weekly: false },
   mealWindows: { breakfast: '7:00 AM - 9:00 AM', lunch: '12:00 PM - 1:00 PM', dinner: '6:00 PM - 8:00 PM' }
 };
 
 let settings = loadData('settings', defaultSettings);
+
+// Dynamic calorie/macro calculation based on user profile
+function calcGoals() {
+  const cw = weights.length ? weights[weights.length-1].weight : (settings.startWeight || 185);
+  const heightIn = parseHeight(settings.height);
+  const age = settings.age || 30;
+  const isMale = settings.sex !== 'Female';
+  // Mifflin-St Jeor BMR (using lbs/inches)
+  const bmr = isMale
+    ? (10 * cw * 0.4536) + (6.25 * heightIn * 2.54) - (5 * age) + 5
+    : (10 * cw * 0.4536) + (6.25 * heightIn * 2.54) - (5 * age) - 161;
+  const actMult = { 'Sedentary': 1.2, 'Lightly Active': 1.375, 'Moderately Active': 1.55 };
+  const tdee = Math.round(bmr * (actMult[settings.activityLevel] || 1.375));
+  const rate = parseFloat(settings.targetRate) || 0.5;
+  const goalMult = settings.primaryGoal === 'Gain Weight' ? 1 : (settings.primaryGoal === 'Maintain Weight' ? 0 : -1);
+  const deficit = Math.round(rate * 500 * goalMult); // 500 cal/day ≈ 1 lb/week
+  const cals = Math.max(1200, tdee + deficit);
+  // Macros: protein 1g/lb lean mass (~30%), carbs ~40%, fat ~30%
+  const proteinCals = Math.round(cals * 0.30);
+  const carbsCals = Math.round(cals * 0.40);
+  const fatCals = Math.round(cals * 0.30);
+  return {
+    tdee,
+    calorieGoal: cals,
+    proteinGoal: Math.round(proteinCals / 4),
+    carbsGoal: Math.round(carbsCals / 4),
+    fatGoal: Math.round(fatCals / 9),
+  };
+}
+function parseHeight(h) {
+  if (!h) return 70;
+  const m = h.match(/(\d+)'(\d+)/); if (m) return parseInt(m[1])*12 + parseInt(m[2]);
+  const cm = h.match(/(\d+)\s*cm/); if (cm) return Math.round(parseInt(cm[1]) / 2.54);
+  return parseInt(h) || 70;
+}
+// Convenience getters
+Object.defineProperty(settings, 'calorieGoal', { get() { return settings.manualMacros ? (loadData('manualCals',2100)) : calcGoals().calorieGoal; }, configurable: true });
+Object.defineProperty(settings, 'proteinGoal', { get() { return settings.manualMacros ? (loadData('manualProtein',155)) : calcGoals().proteinGoal; }, configurable: true });
+Object.defineProperty(settings, 'carbsGoal', { get() { return settings.manualMacros ? (loadData('manualCarbs',210)) : calcGoals().carbsGoal; }, configurable: true });
+Object.defineProperty(settings, 'fatGoal', { get() { return settings.manualMacros ? (loadData('manualFat',70)) : calcGoals().fatGoal; }, configurable: true });
+
 let meals = loadData('meals', []);
 let weights = loadData('weights', []);
 let workouts = loadData('workouts', []);
@@ -856,6 +897,8 @@ function renderSettings() {
       <div class="settings-row" onclick="editSetting('name')"><span class="settings-row-label">Name</span><span class="settings-row-value">${s.name}</span></div>
       <div class="settings-row" onclick="editSetting('units')"><span class="settings-row-label">Units</span><span class="settings-row-value">${s.units==='imperial'?'Imperial (lbs)':'Metric (kg)'}</span></div>
       <div class="settings-row" onclick="editSetting('height')"><span class="settings-row-label">Height</span><span class="settings-row-value">${s.height}</span></div>
+      <div class="settings-row" onclick="editSetting('sex')"><span class="settings-row-label">Sex</span><span class="settings-row-value">${s.sex||'Male'}</span></div>
+      <div class="settings-row" onclick="editSetting('age')"><span class="settings-row-label">Age</span><span class="settings-row-value">${s.age||30}</span></div>
       <div class="settings-row" onclick="editSetting('activityLevel')"><span class="settings-row-label">Activity Level</span><span class="settings-row-value">${s.activityLevel}</span></div>
     </div>
     <div class="settings-section">
@@ -863,10 +906,20 @@ function renderSettings() {
       <div class="settings-row" onclick="editSetting('primaryGoal')"><span class="settings-row-label">Primary Goal</span><span class="settings-row-value">${s.primaryGoal}</span></div>
       <div class="settings-row" onclick="editSetting('targetRate')"><span class="settings-row-label">Target Rate</span><span class="settings-row-value">${s.targetRate} lbs/week</span></div>
       <div class="settings-row" onclick="editSetting('goalWeight')"><span class="settings-row-label">Goal Weight</span><span class="settings-row-value">${s.goalWeight} lbs</span></div>
-      <div class="settings-row" onclick="editSetting('calorieGoal')"><span class="settings-row-label">Calorie Goal</span><span class="settings-row-value">${s.calorieGoal} kcal</span></div>
-      <div class="settings-row" onclick="editSetting('proteinGoal')"><span class="settings-row-label">Protein Goal</span><span class="settings-row-value">${s.proteinGoal}g</span></div>
-      <div class="settings-row" onclick="editSetting('carbsGoal')"><span class="settings-row-label">Carbs Goal</span><span class="settings-row-value">${s.carbsGoal}g</span></div>
-      <div class="settings-row" onclick="editSetting('fatGoal')"><span class="settings-row-label">Fat Goal</span><span class="settings-row-value">${s.fatGoal}g</span></div>
+    </div>
+    <div class="settings-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="settings-label" style="margin-bottom:0">Daily Targets</div>
+        <span style="font-size:0.7rem;color:${s.manualMacros?'var(--text-muted)':'var(--accent)'};font-weight:500;">${s.manualMacros?'Manual override':'Auto-calculated'}</span>
+      </div>
+      ${!s.manualMacros ? `<div style="background:var(--accent-glow);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:10px;font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">Based on your weight, height, activity level, and target rate. TDEE: <strong style="color:var(--text-primary)">${calcGoals().tdee} kcal</strong></div>` : ''}
+      <div class="settings-row"><span class="settings-row-label">Calories</span><span class="settings-row-value" style="color:var(--accent);font-weight:600;">${s.calorieGoal} kcal</span></div>
+      <div class="settings-row"><span class="settings-row-label">Protein</span><span class="settings-row-value" style="color:#22c55e">${s.proteinGoal}g <span style="color:var(--text-muted);font-size:0.72rem;">(30%)</span></span></div>
+      <div class="settings-row"><span class="settings-row-label">Carbs</span><span class="settings-row-value" style="color:#3b82f6">${s.carbsGoal}g <span style="color:var(--text-muted);font-size:0.72rem;">(40%)</span></span></div>
+      <div class="settings-row"><span class="settings-row-label">Fat</span><span class="settings-row-value" style="color:#ef4444">${s.fatGoal}g <span style="color:var(--text-muted);font-size:0.72rem;">(30%)</span></span></div>
+      <div style="margin-top:8px;text-align:center;">
+        <button class="btn btn-secondary btn-sm" onclick="toggleManualMacros()">${s.manualMacros ? 'Switch to Auto-Calculated' : 'Override Manually'}</button>
+      </div>
     </div>
     <div class="settings-section">
       <div class="settings-label">AI Coach</div>
@@ -991,11 +1044,11 @@ function saveWorkout() {
 let currentEditField = '';
 function editSetting(field) {
   currentEditField = field;
-  const labels = { name:'Name', units:'Units', height:'Height', activityLevel:'Activity Level', primaryGoal:'Primary Goal', targetRate:'Target Rate (lbs/week)', goalWeight:'Goal Weight', calorieGoal:'Daily Calorie Goal', proteinGoal:'Protein Goal (g)', carbsGoal:'Carbs Goal (g)', fatGoal:'Fat Goal (g)', persona:'Coach Persona', responseLength:'Response Length', emojiUse:'Emoji Use' };
+  const labels = { name:'Name', units:'Units', height:'Height', sex:'Sex', age:'Age', activityLevel:'Activity Level', primaryGoal:'Primary Goal', targetRate:'Target Rate (lbs/week)', goalWeight:'Goal Weight', persona:'Coach Persona', responseLength:'Response Length', emojiUse:'Emoji Use' };
   document.getElementById('settingsEditTitle').innerHTML = `Edit ${labels[field]||field} <button class="modal-close" onclick="closeModal('settingsEditModal')">&times;</button>`;
 
   const selects = {
-    units: ['imperial','metric'], activityLevel: ['Sedentary','Lightly Active','Moderately Active'],
+    units: ['imperial','metric'], sex: ['Male','Female'], activityLevel: ['Sedentary','Lightly Active','Moderately Active'],
     primaryGoal: ['Lose Weight','Maintain Weight','Gain Weight'],
     persona: ['Jillian','Michael','Tiara'], responseLength: ['Short','Medium','Long'],
     emojiUse: ['None','A Few','Lots']
@@ -1026,17 +1079,41 @@ function editSetting(field) {
             <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">${p.desc}</div>
           </div>`).join('')}
       </div>`;
+  } else if (field === 'targetRate') {
+    const rates = [
+      { val: '0.25', label: '0.25 lbs/week', tagline: 'Light Deficit', desc: 'Minimal calorie cut — easy to stick to, preserves muscle, and barely noticeable day-to-day. Great for those close to their goal.', recommended: false },
+      { val: '0.5', label: '0.5 lbs/week', tagline: 'Moderate Deficit', desc: 'The sweet spot for most people. Steady, sustainable progress without feeling deprived. Backed by research as the most maintainable rate.', recommended: true },
+      { val: '0.75', label: '0.75 lbs/week', tagline: 'Moderate-Aggressive', desc: 'Faster results with a noticeable deficit. Requires more discipline with food choices but still manageable for most.', recommended: false },
+      { val: '1.0', label: '1.0 lb/week', tagline: 'Aggressive Deficit', desc: 'Maximum recommended rate. Significant calorie restriction — best for those with more weight to lose or short-term pushes. Harder to sustain long-term.', recommended: false },
+    ];
+    document.getElementById('settingsEditBody').innerHTML = `
+      <input type="hidden" id="settingsEditVal" value="${settings.targetRate}" />
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${rates.map(r => `
+          <div onclick="document.getElementById('settingsEditVal').value='${r.val}';document.querySelectorAll('.rate-card').forEach(c=>{c.style.borderColor='var(--border)';c.querySelector('.rate-check').textContent=''});this.style.borderColor='var(--accent)';this.querySelector('.rate-check').textContent='✓';"
+            class="rate-card" style="padding:16px;background:var(--bg-card);border-radius:var(--radius-sm);border:2px solid ${settings.targetRate===r.val?'var(--accent)':'var(--border)'};cursor:pointer;transition:border-color 0.2s;position:relative;">
+            ${r.recommended ? '<div style="position:absolute;top:-9px;right:12px;background:var(--accent);color:var(--bg-primary);font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.04em;">Recommended</div>' : ''}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div>
+                <span style="font-weight:700;font-size:1rem;">${r.label}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px;">${r.tagline}</span>
+              </div>
+              <span class="rate-check" style="color:var(--accent);font-weight:700;font-size:1.1rem;">${settings.targetRate===r.val?'✓':''}</span>
+            </div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">${r.desc}</div>
+          </div>`).join('')}
+      </div>`;
   } else if (selects[field]) {
     document.getElementById('settingsEditBody').innerHTML = `<select class="form-select" id="settingsEditVal">${selects[field].map(o => `<option ${settings[field]===o?'selected':''}>${o}</option>`).join('')}</select>`;
   } else {
-    const type = ['goalWeight','calorieGoal','proteinGoal','carbsGoal','fatGoal'].includes(field) ? 'number' : 'text';
+    const type = ['goalWeight','age'].includes(field) ? 'number' : 'text';
     document.getElementById('settingsEditBody').innerHTML = `<input type="${type}" class="form-input" id="settingsEditVal" value="${settings[field]}" />`;
   }
   document.getElementById('settingsEditModal').classList.add('open');
 }
 function saveSettingsEdit() {
   let val = document.getElementById('settingsEditVal').value;
-  if (['goalWeight','calorieGoal','proteinGoal','carbsGoal','fatGoal'].includes(currentEditField)) val = parseFloat(val);
+  if (['goalWeight','age'].includes(currentEditField)) val = parseFloat(val);
   settings[currentEditField] = val;
   save(); closeModal('settingsEditModal'); renderAll();
 }
@@ -1044,6 +1121,18 @@ function toggleNotif(key, el) {
   settings.notifications[key] = !settings.notifications[key];
   el.classList.toggle('on');
   save();
+}
+function toggleManualMacros() {
+  if (!settings.manualMacros) {
+    // Switching to manual — save current auto values as starting point
+    const g = calcGoals();
+    saveData('manualCals', g.calorieGoal);
+    saveData('manualProtein', g.proteinGoal);
+    saveData('manualCarbs', g.carbsGoal);
+    saveData('manualFat', g.fatGoal);
+  }
+  settings.manualMacros = !settings.manualMacros;
+  save(); renderAll();
 }
 
 // Chat
