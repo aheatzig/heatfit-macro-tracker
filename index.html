@@ -408,7 +408,7 @@
   <!-- Step 1: Profile & Biometrics -->
   <div class="ob-step" id="obStep1">
     <div class="ob-header">
-      <div class="ob-step-num">Step 1 of 7</div>
+      <div class="ob-step-num">Step 1 of 8</div>
       <div class="ob-title">Your Profile</div>
       <div class="ob-subtitle">Let's get the basics so we can calculate your targets.</div>
     </div>
@@ -490,7 +490,7 @@
   <!-- Step 2: Goals -->
   <div class="ob-step" id="obStep2">
     <div class="ob-header">
-      <div class="ob-step-num">Step 2 of 7</div>
+      <div class="ob-step-num">Step 2 of 8</div>
       <div class="ob-title">Your Goals</div>
       <div class="ob-subtitle">What are you working toward?</div>
     </div>
@@ -533,7 +533,7 @@
   <!-- Step 3: Strava -->
   <div class="ob-step" id="obStep3">
     <div class="ob-header">
-      <div class="ob-step-num">Step 3 of 7</div>
+      <div class="ob-step-num">Step 3 of 8</div>
       <div class="ob-title">Connect Strava</div>
       <div class="ob-subtitle">Automatically import workouts and calorie burn data.</div>
     </div>
@@ -555,7 +555,7 @@
   <!-- Step 4: AI Coach Persona -->
   <div class="ob-step" id="obStep4">
     <div class="ob-header">
-      <div class="ob-step-num">Step 4 of 7</div>
+      <div class="ob-step-num">Step 4 of 8</div>
       <div class="ob-title">Choose Your Coach</div>
       <div class="ob-subtitle">Pick the coaching style that motivates you most.</div>
     </div>
@@ -589,10 +589,40 @@
     </div>
   </div>
 
-  <!-- Step 5: Communication Preferences -->
+  <!-- Step 5: Connect AI Coach -->
   <div class="ob-step" id="obStep5">
     <div class="ob-header">
-      <div class="ob-step-num">Step 5 of 7</div>
+      <div class="ob-step-num">Step 5 of 8</div>
+      <div class="ob-title">Connect Your AI Coach</div>
+      <div class="ob-subtitle">Power your coach with Google's Gemini AI — it's free.</div>
+    </div>
+    <div class="ob-content">
+      <div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+        <div style="font-size:0.88rem;font-weight:600;margin-bottom:10px;">How to get your free API key:</div>
+        <ol style="font-size:0.82rem;color:var(--text-secondary);line-height:1.8;padding-left:18px;">
+          <li>Visit <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);font-weight:600;">aistudio.google.com/apikey</a></li>
+          <li>Sign in with your Google account</li>
+          <li>Click <strong style="color:var(--text-primary);">Create API Key</strong></li>
+          <li>Copy the key and paste it below</li>
+        </ol>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gemini API Key</label>
+        <input type="password" class="form-input" id="obGeminiKey" placeholder="AIza..." />
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5;">Your key is stored locally on your device and never sent to our servers. Without it, your coach will use basic offline responses.</div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obNext()">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+      <div style="text-align:center;margin-top:8px;"><button style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer;" onclick="obNext()">Skip for now</button></div>
+    </div>
+  </div>
+
+  <!-- Step 6: Communication Preferences -->
+  <div class="ob-step" id="obStep6">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 6 of 8</div>
       <div class="ob-title">Communication Style</div>
       <div class="ob-subtitle">How should your coach talk to you?</div>
     </div>
@@ -622,10 +652,10 @@
     </div>
   </div>
 
-  <!-- Step 6: Timezone & Meal Windows -->
-  <div class="ob-step" id="obStep6">
+  <!-- Step 7: Timezone & Meal Windows -->
+  <div class="ob-step" id="obStep7">
     <div class="ob-header">
-      <div class="ob-step-num">Step 6 of 7</div>
+      <div class="ob-step-num">Step 7 of 8</div>
       <div class="ob-title">Schedule</div>
       <div class="ob-subtitle">Help us time reminders and organize your day.</div>
     </div>
@@ -658,10 +688,10 @@
     </div>
   </div>
 
-  <!-- Step 7: Notifications -->
-  <div class="ob-step" id="obStep7">
+  <!-- Step 8: Notifications -->
+  <div class="ob-step" id="obStep8">
     <div class="ob-header">
-      <div class="ob-step-num">Step 7 of 7</div>
+      <div class="ob-step-num">Step 8 of 8</div>
       <div class="ob-title">Notifications</div>
       <div class="ob-subtitle">Choose which email reminders you'd like to receive.</div>
     </div>
@@ -1085,7 +1115,7 @@ function save() {
 
 // ============ ONBOARDING ============
 let obStep = 1;
-const OB_STEPS = 7;
+const OB_STEPS = 8;
 
 function obSelectOption(el, hiddenId, value) {
   const parent = el.parentElement;
@@ -1169,6 +1199,7 @@ function obCollectData() {
     secondaryGoals: [...document.querySelectorAll('#obSecondaryGoals .ob-chip.selected')].map(c => c.textContent.trim()),
     stravaConnected: document.getElementById('obStrava').value === 'true',
     persona: document.getElementById('obPersona').value,
+    geminiApiKey: (document.getElementById('obGeminiKey').value || '').trim(),
     responseLength: document.getElementById('obRespLen').value,
     emojiUse: document.getElementById('obEmoji').value,
     timezone: document.getElementById('obTimezone').value,
@@ -1795,56 +1826,43 @@ Be conservative. Whole numbers only.`;
     }
     contents[0].parts.push({ text: prompt });
 
-    // Try multiple models and approaches
+    // Single model with patient rate-limit retry (waits increase: 5s, 10s, 15s)
     document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
     let result = null;
-    const attempts = [
-      { model: 'gemini-2.0-flash', config: { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' } },
-      { model: 'gemini-2.0-flash', config: { maxOutputTokens: 500, temperature: 0.2 } },
-      { model: 'gemini-1.5-flash', config: { maxOutputTokens: 500, temperature: 0.2 } },
-    ];
+    const model = 'gemini-2.0-flash';
+    const genConfig = { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' };
+    const maxRetries = 4;
 
-    for (const attempt of attempts) {
+    for (let i = 0; i < maxRetries; i++) {
+      if (i > 0) {
+        var waitSec = i * 5;
+        console.log('[Food AI] Attempt ' + (i+1) + ' - waiting ' + waitSec + 's...');
+        document.getElementById('foodEstimateStatus').textContent = 'Rate limited \u2014 retrying in ' + waitSec + 's...';
+        await new Promise(function(r) { setTimeout(r, waitSec * 1000); });
+        document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
+      }
       try {
-        console.log('[Food AI] Trying', attempt.model, 'with config', JSON.stringify(attempt.config));
-        const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + attempt.model + ':generateContent?key=' + apiKey, {
+        console.log('[Food AI] Attempt ' + (i+1) + ' of ' + maxRetries);
+        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: contents, generationConfig: attempt.config })
+          body: JSON.stringify({ contents: contents, generationConfig: genConfig })
         });
-        console.log('[Food AI]', attempt.model, 'status:', resp.status);
-        if (resp.status === 429) {
-          console.log('[Food AI] Rate limited, waiting 3s...');
-          await new Promise(function(r) { setTimeout(r, 3000); });
-          const retry = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + attempt.model + ':generateContent?key=' + apiKey, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: contents, generationConfig: attempt.config })
-          });
-          console.log('[Food AI] Retry status:', retry.status);
-          if (retry.ok) {
-            const d = await retry.json();
-            result = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
-            if (result) { console.log('[Food AI] Got result on retry'); break; }
-          }
-          continue;
-        }
-        if (resp.status === 404 || resp.status === 400) {
-          console.log('[Food AI]', attempt.model, 'not available or bad request, trying next...');
-          const errBody = await resp.text();
-          console.log('[Food AI] Error body:', errBody.slice(0, 300));
+        console.log('[Food AI] Status:', resp.status);
+        if (resp.status === 429) { continue; }
+        if (resp.status === 400 && genConfig.responseMimeType) {
+          console.log('[Food AI] 400 error, removing responseMimeType...');
+          delete genConfig.responseMimeType;
           continue;
         }
         if (!resp.ok) {
-          const errBody = await resp.text();
-          console.log('[Food AI] Non-OK response:', resp.status, errBody.slice(0, 300));
+          console.log('[Food AI] Error:', resp.status);
           continue;
         }
-        const data = await resp.json();
-        console.log('[Food AI] Response data:', JSON.stringify(data).slice(0, 500));
+        var data = await resp.json();
         result = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-        if (result) { console.log('[Food AI] Success with', attempt.model); break; }
-        console.log('[Food AI] No text in response, trying next...');
+        if (result) { console.log('[Food AI] Success on attempt ' + (i+1)); break; }
       } catch(e) {
-        console.error('[Food AI] Error with', attempt.model, ':', e);
+        console.error('[Food AI] Error:', e);
         continue;
       }
     }
