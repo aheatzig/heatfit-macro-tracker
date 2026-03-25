@@ -97,6 +97,18 @@
       background: var(--bg-card); border-radius: var(--radius);
       padding: 18px; margin-bottom: 14px; border: 1px solid var(--border);
     }
+    .dash-card {
+      cursor: pointer; transition: border-color 0.2s, transform 0.15s;
+    }
+    .dash-card:active { transform: scale(0.98); }
+    .dash-card:hover { border-color: var(--accent); }
+    .dash-card-hint {
+      font-size: 0.68rem; font-weight: 500; color: var(--text-muted);
+      text-transform: none; letter-spacing: 0; opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .dash-card:hover .dash-card-hint { opacity: 1; }
+    @media (hover: none) { .dash-card-hint { opacity: 0.6; } }
     .card-title {
       font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;
@@ -342,12 +354,12 @@
   <!-- DASHBOARD -->
   <section id="screen-home" class="screen active">
     <div style="margin-bottom:14px;" id="streakBadge"></div>
-    <div class="card" id="dashCalorieCard"></div>
-    <div class="card" id="dashMacrosCard"></div>
-    <div class="card">
+    <div class="card dash-card" onclick="switchScreen('food')" id="dashCalorieCard"></div>
+    <div class="card dash-card" onclick="switchScreen('food')" id="dashMacrosCard"></div>
+    <div class="card dash-card" onclick="switchScreen('weight')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div class="card-title">Weight Trend</div>
+          <div class="card-title">Weight Trend <span class="dash-card-hint">Tap for details →</span></div>
           <div id="dashWeightCurrent" style="font-size:1.6rem;font-weight:800;"></div>
           <div id="dashWeightChange" style="margin-top:6px;"></div>
         </div>
@@ -358,14 +370,13 @@
       </div>
       <div class="chart-canvas-wrap"><canvas id="weightMiniChart"></canvas></div>
     </div>
-    <div class="card" id="dashWorkoutCard"></div>
-    <div class="card">
-      <div class="card-title">Coach Insight</div>
+    <div class="card dash-card" onclick="switchScreen('workouts')" id="dashWorkoutCard"></div>
+    <div class="card dash-card" onclick="switchScreen('chat')">
+      <div class="card-title">Coach Insight <span class="dash-card-hint">Tap to chat →</span></div>
       <div class="coach-insight">
         <div class="coach-avatar michael">M</div>
         <div>
           <div class="coach-text" id="dashCoachInsight"></div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="switchScreen('chat')">Ask Coach</button>
         </div>
       </div>
     </div>
@@ -717,7 +728,7 @@ function renderDashboard() {
 
   // Calories
   document.getElementById('dashCalorieCard').innerHTML = `
-    <div class="card-title">Today's Calories</div>
+    <div class="card-title">Today's Calories <span class="dash-card-hint">Tap to log food →</span></div>
     ${burn > 0 ? `<div style="background:var(--success-bg);border-radius:var(--radius-xs);padding:8px 12px;margin-bottom:12px;font-size:0.78rem;display:flex;justify-content:space-between;align-items:center;">
       <span style="color:var(--success);">🏋️ Workout adjusted your goal</span>
       <span style="color:var(--text-primary);font-weight:600;">${baseGoal.toLocaleString()} + ${burn} = <span style="color:var(--accent)">${goal.toLocaleString()} kcal</span></span>
@@ -746,7 +757,7 @@ function renderDashboard() {
   const cp = Math.min(100, Math.round(t.carbs/settings.carbsGoal*100));
   const fp = Math.min(100, Math.round(t.fat/settings.fatGoal*100));
   document.getElementById('dashMacrosCard').innerHTML = `
-    <div class="card-title">Macros</div>
+    <div class="card-title">Macros <span class="dash-card-hint">Tap to log food →</span></div>
     <div class="macros-row">
       <div class="macro-item"><div class="macro-label">Protein</div><div class="macro-val" style="color:#22c55e">${t.protein}g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ ${settings.proteinGoal}g</span></div><div class="progress-bar"><div class="progress-bar-fill protein" style="width:${pp}%"></div></div></div>
       <div class="macro-item"><div class="macro-label">Carbs</div><div class="macro-val" style="color:#3b82f6">${t.carbs}g <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">/ ${settings.carbsGoal}g</span></div><div class="progress-bar"><div class="progress-bar-fill carbs" style="width:${cp}%"></div></div></div>
@@ -768,7 +779,7 @@ function renderDashboard() {
   if (tw.length > 0) {
     const w = tw[tw.length-1];
     document.getElementById('dashWorkoutCard').innerHTML = `
-      <div class="card-title">Today's Workout</div>
+      <div class="card-title">Today's Workout <span class="dash-card-hint">Tap for workouts →</span></div>
       <div style="display:flex;align-items:center;gap:14px;">
         <div class="workout-icon" style="background:rgba(59,130,246,0.15)"><svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
         <div style="flex:1"><div class="workout-name">${w.type}</div><div class="workout-meta">${w.duration} min${w.distance ? ' · '+w.distance+' mi' : ''} · ${w.effort}</div></div>
@@ -776,7 +787,7 @@ function renderDashboard() {
       </div>`;
   } else {
     document.getElementById('dashWorkoutCard').innerHTML = `
-      <div class="card-title">Today's Workout</div>
+      <div class="card-title">Today's Workout <span class="dash-card-hint">Tap for workouts →</span></div>
       <div style="text-align:center;padding:12px 0;color:var(--text-muted);font-size:0.88rem;">No workout logged today</div>
       <button class="btn btn-secondary btn-full btn-sm" onclick="switchScreen('workouts')">Log Workout</button>`;
   }
