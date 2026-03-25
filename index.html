@@ -503,37 +503,65 @@
 <div class="modal-overlay" id="foodModal">
   <div class="modal">
     <div class="modal-title">Log Food <button class="modal-close" onclick="closeModal('foodModal')">&times;</button></div>
-    <div class="form-group">
-      <label class="form-label">Meal</label>
-      <select class="form-select" id="foodMealType">
-        <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
-      </select>
+
+    <!-- STEP 1: Describe -->
+    <div id="foodStep1">
+      <div class="form-group">
+        <label class="form-label">Meal</label>
+        <select class="form-select" id="foodMealType">
+          <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+        </select>
+      </div>
+      <div class="form-group" id="foodPhotoGroup" style="display:none;">
+        <label class="form-label">Photo</label>
+        <input type="file" accept="image/*" capture="environment" id="foodPhotoFile" class="form-input" onchange="handleFoodPhoto(event)" />
+        <div id="foodPhotoPreview" style="margin-top:8px;display:none;">
+          <img id="foodPhotoThumbModal" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-xs);border:1px solid var(--border);" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Describe what you ate</label>
+        <input type="text" class="form-input" id="foodDesc" placeholder="e.g. Grilled chicken breast 6oz, brown rice, steamed broccoli with olive oil" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="estimateMacros()" id="foodEstimateBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+        Estimate Macros &amp; Log
+      </button>
+      <div style="text-align:center;margin-top:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="showManualEntry()" style="font-size:0.75rem;color:var(--text-muted);">Enter macros manually instead</button>
+      </div>
     </div>
-    <div class="form-group" id="foodPhotoGroup" style="display:none;">
-      <label class="form-label">Photo</label>
-      <input type="file" accept="image/*" capture="environment" id="foodPhotoFile" class="form-input" />
+
+    <!-- STEP 2: AI Estimating -->
+    <div id="foodStep2" style="display:none;text-align:center;padding:30px 0;">
+      <div style="font-size:2rem;margin-bottom:12px;">🧠</div>
+      <div style="font-weight:600;margin-bottom:6px;">Analyzing your meal...</div>
+      <div style="font-size:0.82rem;color:var(--text-secondary);" id="foodEstimateStatus">Sending to AI coach</div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Description</label>
-      <input type="text" class="form-input" id="foodDesc" placeholder="e.g. Grilled chicken, rice, broccoli" />
+
+    <!-- STEP 3: Review & Confirm -->
+    <div id="foodStep3" style="display:none;">
+      <div id="foodAiNote" style="background:var(--accent-glow);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-xs);padding:12px;margin-bottom:14px;font-size:0.82rem;color:var(--text-secondary);line-height:1.5;"></div>
+      <div class="form-group">
+        <label class="form-label">Food Name</label>
+        <input type="text" class="form-input" id="foodName" />
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Calories</label><input type="number" class="form-input" id="foodCals" /></div>
+        <div class="form-group"><label class="form-label">Protein (g)</label><input type="number" class="form-input" id="foodProtein" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Carbs (g)</label><input type="number" class="form-input" id="foodCarbs" /></div>
+        <div class="form-group"><label class="form-label">Fat (g)</label><input type="number" class="form-input" id="foodFat" /></div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">AI estimates may not be exact. Adjust numbers above if needed.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <input type="checkbox" id="foodSaveStaple" style="accent-color:var(--accent);width:18px;height:18px;" />
+        <label for="foodSaveStaple" style="font-size:0.85rem;">Save as Staple Meal</label>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="confirmFood()">✓ Confirm &amp; Log</button>
+      <button class="btn btn-secondary btn-full btn-sm" style="margin-top:8px;" onclick="resetFoodModal()">← Back</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Food Name</label>
-      <input type="text" class="form-input" id="foodName" placeholder="e.g. Chicken & Rice Bowl" />
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Calories</label><input type="number" class="form-input" id="foodCals" placeholder="0" /></div>
-      <div class="form-group"><label class="form-label">Protein (g)</label><input type="number" class="form-input" id="foodProtein" placeholder="0" /></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Carbs (g)</label><input type="number" class="form-input" id="foodCarbs" placeholder="0" /></div>
-      <div class="form-group"><label class="form-label">Fat (g)</label><input type="number" class="form-input" id="foodFat" placeholder="0" /></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-      <input type="checkbox" id="foodSaveStaple" checked style="accent-color:var(--accent);width:18px;height:18px;" />
-      <label for="foodSaveStaple" style="font-size:0.85rem;">Save as Staple Meal</label>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="saveFood()">Log Food</button>
   </div>
 </div>
 
@@ -1027,16 +1055,147 @@ function renderChat() {
 }
 
 // ============ ACTIONS ============
+let foodPhotoData = null;
+
 function openFoodModal(mode, meal) {
+  resetFoodModal();
   document.getElementById('foodPhotoGroup').style.display = mode === 'photo' ? 'block' : 'none';
-  document.getElementById('foodMealType').value = meal || 'Breakfast';
-  ['foodDesc','foodName','foodCals','foodProtein','foodCarbs','foodFat'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('foodSaveStaple').checked = false;
+  document.getElementById('foodMealType').value = meal || guessNextMeal();
   document.getElementById('foodModal').classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-function saveFood() {
+function resetFoodModal() {
+  document.getElementById('foodStep1').style.display = 'block';
+  document.getElementById('foodStep2').style.display = 'none';
+  document.getElementById('foodStep3').style.display = 'none';
+  ['foodDesc','foodName','foodCals','foodProtein','foodCarbs','foodFat'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('foodSaveStaple').checked = false;
+  document.getElementById('foodEstimateBtn').disabled = false;
+  document.getElementById('foodPhotoPreview').style.display = 'none';
+  foodPhotoData = null;
+}
+
+function handleFoodPhoto(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    foodPhotoData = ev.target.result;
+    document.getElementById('foodPhotoThumbModal').src = ev.target.result;
+    document.getElementById('foodPhotoPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function showManualEntry() {
+  document.getElementById('foodStep1').style.display = 'none';
+  document.getElementById('foodStep3').style.display = 'block';
+  document.getElementById('foodAiNote').innerHTML = '<strong>Manual entry</strong> — Enter the macros yourself.';
+  document.getElementById('foodName').value = document.getElementById('foodDesc').value || '';
+}
+
+async function estimateMacros() {
+  const desc = document.getElementById('foodDesc').value.trim();
+  const hasPhoto = !!foodPhotoData;
+  if (!desc && !hasPhoto) {
+    alert('Please describe your meal or add a photo.');
+    return;
+  }
+
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) {
+    // No API key — skip to manual with a hint
+    showManualEntry();
+    document.getElementById('foodAiNote').innerHTML = '⚠️ No AI key set. Add a free Gemini API key in Settings → Integrations to get automatic macro estimates.<br><br>Enter macros manually below.';
+    return;
+  }
+
+  // Step 2: Show loading
+  document.getElementById('foodStep1').style.display = 'none';
+  document.getElementById('foodStep2').style.display = 'block';
+  document.getElementById('foodEstimateBtn').disabled = true;
+
+  try {
+    const prompt = `Analyze this meal and estimate its nutritional content. Return your response in EXACTLY this JSON format with no other text:
+{"name":"Short descriptive name for this meal","calories":000,"protein":00,"carbs":00,"fat":00,"fiber":0,"note":"One brief sentence about this meal in context of the user's goals"}
+
+The meal: ${desc || 'See photo'}
+User is targeting ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein.
+Be accurate and conservative with estimates. Round to whole numbers.`;
+
+    const contents = [{ role: 'user', parts: [] }];
+    if (hasPhoto) {
+      try {
+        const base64 = foodPhotoData.split(',')[1];
+        const mimeType = foodPhotoData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+        contents[0].parts.push({ inlineData: { mimeType, data: base64 } });
+      } catch(e) {}
+    }
+    contents[0].parts.push({ text: prompt });
+
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let result = null;
+
+    for (const model of models) {
+      try {
+        document.getElementById('foodEstimateStatus').textContent = `Analyzing with ${model}...`;
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 300, temperature: 0.3 } })
+        });
+        if (resp.status === 429) {
+          await new Promise(r => setTimeout(r, 2000));
+          const retry = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 300, temperature: 0.3 } })
+          });
+          if (retry.ok) { const d = await retry.json(); result = d.candidates?.[0]?.content?.parts?.[0]?.text; if (result) break; }
+          continue;
+        }
+        if (resp.status === 404) continue;
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (result) break;
+      } catch(e) { continue; }
+    }
+
+    if (result) {
+      // Parse the JSON from the response (handle markdown code blocks)
+      const jsonStr = result.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      try {
+        const parsed = JSON.parse(jsonStr);
+        document.getElementById('foodName').value = parsed.name || desc;
+        document.getElementById('foodCals').value = parsed.calories || 0;
+        document.getElementById('foodProtein').value = parsed.protein || 0;
+        document.getElementById('foodCarbs').value = parsed.carbs || 0;
+        document.getElementById('foodFat').value = parsed.fat || 0;
+        document.getElementById('foodAiNote').innerHTML = `<strong>🧠 AI Estimate:</strong> ${parsed.note || 'Review the numbers below and adjust if needed.'}`;
+        document.getElementById('foodSaveStaple').checked = true;
+      } catch(parseErr) {
+        // Try to extract numbers from non-JSON response
+        console.warn('Could not parse AI response as JSON:', result);
+        document.getElementById('foodName').value = desc || 'Meal';
+        document.getElementById('foodAiNote').innerHTML = `<strong>AI response:</strong> ${result.replace(/\n/g, '<br>').slice(0, 300)}<br><br><em>Could not auto-fill — please enter macros manually.</em>`;
+      }
+    } else {
+      document.getElementById('foodName').value = desc || 'Meal';
+      document.getElementById('foodAiNote').innerHTML = '⚠️ AI estimation failed. Please enter macros manually.';
+    }
+  } catch(e) {
+    console.error('Macro estimation error:', e);
+    document.getElementById('foodName').value = desc || 'Meal';
+    document.getElementById('foodAiNote').innerHTML = '⚠️ Something went wrong. Please enter macros manually.';
+  }
+
+  // Show step 3 (review)
+  document.getElementById('foodStep2').style.display = 'none';
+  document.getElementById('foodStep3').style.display = 'block';
+}
+
+function confirmFood() {
   const name = document.getElementById('foodName').value || document.getElementById('foodDesc').value || 'Unnamed';
   const entry = {
     id: Date.now().toString(), date: foodViewDate, meal: document.getElementById('foodMealType').value,
@@ -1050,7 +1209,7 @@ function saveFood() {
   if (document.getElementById('foodSaveStaple').checked && entry.cals > 0) {
     staples.push({ name: entry.name, cals: entry.cals, protein: entry.protein, carbs: entry.carbs, fat: entry.fat });
   }
-  save(); closeModal('foodModal'); renderAll();
+  save(); closeModal('foodModal'); resetFoodModal(); renderAll();
 }
 
 function deleteFood(id) {
