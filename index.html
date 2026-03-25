@@ -870,7 +870,7 @@ function renderSettings() {
     </div>
     <div class="settings-section">
       <div class="settings-label">AI Coach</div>
-      <div class="settings-row" onclick="editSetting('persona')"><span class="settings-row-label">Persona</span><span class="settings-row-value" style="color:var(--${s.persona.toLowerCase()}-color)">${s.persona}</span></div>
+      <div class="settings-row" onclick="editSetting('persona')"><span class="settings-row-label">Persona</span><span class="settings-row-value" style="color:var(--${s.persona.toLowerCase()}-color)">${s.persona} ${{Jillian:'🔥',Michael:'⚖️',Tiara:'💜'}[s.persona]||''}</span></div>
       <div class="settings-row" onclick="editSetting('responseLength')"><span class="settings-row-label">Response Length</span><span class="settings-row-value">${s.responseLength}</span></div>
       <div class="settings-row" onclick="editSetting('emojiUse')"><span class="settings-row-label">Emoji Use</span><span class="settings-row-value">${s.emojiUse}</span></div>
     </div>
@@ -1001,7 +1001,32 @@ function editSetting(field) {
     emojiUse: ['None','A Few','Lots']
   };
 
-  if (selects[field]) {
+  if (field === 'persona') {
+    const personas = [
+      { name: 'Jillian', color: 'var(--jillian-color)', emoji: '🔥', tagline: 'Direct & No-Nonsense',
+        desc: 'Tough-love coach who pushes you hard. Calls out excuses, celebrates PRs, and keeps you accountable with blunt honesty. Best for those who thrive under pressure.' },
+      { name: 'Michael', color: 'var(--michael-color)', emoji: '⚖️', tagline: 'Balanced & Real',
+        desc: 'Grounded, evidence-based coach who meets you where you are. Gives practical advice without sugar-coating or yelling. Best for sustainable, no-drama guidance.' },
+      { name: 'Tiara', color: 'var(--tiara-color)', emoji: '💜', tagline: 'Warm & Supportive',
+        desc: 'Encouraging coach focused on your wellbeing, not just the numbers. Celebrates small wins and helps you build a healthy relationship with food and fitness.' },
+    ];
+    document.getElementById('settingsEditBody').innerHTML = `
+      <input type="hidden" id="settingsEditVal" value="${settings.persona}" />
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${personas.map(p => `
+          <div onclick="document.getElementById('settingsEditVal').value='${p.name}';document.querySelectorAll('.persona-card').forEach(c=>c.style.borderColor='var(--border)');this.style.borderColor='${p.color}';"
+            class="persona-card" style="padding:16px;background:var(--bg-card);border-radius:var(--radius-sm);border:2px solid ${settings.persona===p.name?p.color:'var(--border)'};cursor:pointer;transition:border-color 0.2s;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <div style="width:40px;height:40px;border-radius:50%;background:${p.color}22;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${p.emoji}</div>
+              <div>
+                <div style="font-weight:700;font-size:0.95rem;color:${p.color}">${p.name}</div>
+                <div style="font-size:0.75rem;color:var(--text-secondary)">${p.tagline}</div>
+              </div>
+            </div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">${p.desc}</div>
+          </div>`).join('')}
+      </div>`;
+  } else if (selects[field]) {
     document.getElementById('settingsEditBody').innerHTML = `<select class="form-select" id="settingsEditVal">${selects[field].map(o => `<option ${settings[field]===o?'selected':''}>${o}</option>`).join('')}</select>`;
   } else {
     const type = ['goalWeight','calorieGoal','proteinGoal','carbsGoal','fatGoal'].includes(field) ? 'number' : 'text';
