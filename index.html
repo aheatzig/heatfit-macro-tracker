@@ -1164,7 +1164,15 @@ Be accurate and conservative with estimates. Round to whole numbers.`;
 
     if (result) {
       // Parse the JSON from the response (handle markdown code blocks)
-      const jsonStr = result.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      // Extract JSON from response — handle code fences, extra text, etc.
+      let jsonStr = result;
+      // Try to find JSON object in the response
+      const jsonMatch = result.match(/\{[\s\S]*?"name"[\s\S]*?"calories"[\s\S]*?\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      } else {
+        jsonStr = result.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').replace(/^\s*json\s*/i, '').trim();
+      }
       try {
         const parsed = JSON.parse(jsonStr);
         document.getElementById('foodName').value = parsed.name || desc;
