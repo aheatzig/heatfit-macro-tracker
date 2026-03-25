@@ -654,6 +654,7 @@ function todayTotals() {
   return { cals: tm.reduce((s,m) => s+m.cals, 0), protein: tm.reduce((s,m) => s+m.protein, 0), carbs: tm.reduce((s,m) => s+m.carbs, 0), fat: tm.reduce((s,m) => s+m.fat, 0) };
 }
 function todayBurn() { return todayWorkouts().reduce((s,w) => s + (w.calsBurned||0), 0); }
+function adjustedCalorieGoal() { return settings.calorieGoal + todayBurn(); }
 function estimateCalBurn(type, duration, effort) {
   const base = { Running: 10, Cycling: 7, Swimming: 9, 'Weight Training': 6, HIIT: 11, Yoga: 3, Walking: 4, Other: 5 };
   const mult = { Easy: 0.7, Moderate: 1, Hard: 1.3, Max: 1.5 };
@@ -696,8 +697,8 @@ function renderAll() {
 function renderDashboard() {
   const t = todayTotals();
   const burn = todayBurn();
-  const goal = settings.calorieGoal;
-  const net = t.cals - burn;
+  const baseGoal = settings.calorieGoal;
+  const goal = adjustedCalorieGoal();
   const remaining = Math.max(0, goal - t.cals);
   const pct = Math.min(1, t.cals / goal);
   const offset = 314 - (314 * pct);
@@ -713,6 +714,10 @@ function renderDashboard() {
   // Calories
   document.getElementById('dashCalorieCard').innerHTML = `
     <div class="card-title">Today's Calories</div>
+    ${burn > 0 ? `<div style="background:var(--success-bg);border-radius:var(--radius-xs);padding:8px 12px;margin-bottom:12px;font-size:0.78rem;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:var(--success);">🏋️ Workout adjusted your goal</span>
+      <span style="color:var(--text-primary);font-weight:600;">${baseGoal.toLocaleString()} + ${burn} = <span style="color:var(--accent)">${goal.toLocaleString()} kcal</span></span>
+    </div>` : ''}
     <div class="calorie-ring-container">
       <div class="calorie-ring">
         <svg width="120" height="120" viewBox="0 0 120 120">
@@ -726,8 +731,8 @@ function renderDashboard() {
       </div>
       <div class="calorie-info">
         <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--accent)"></span>Consumed</span><span style="font-weight:600">${t.cals.toLocaleString()}</span></div>
-        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--success)"></span>Burned</span><span style="font-weight:600">${burn}</span></div>
-        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--info)"></span>Net</span><span style="font-weight:600;color:${net <= goal ? 'var(--success)' : 'var(--danger)'}">${net.toLocaleString()}</span></div>
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--success)"></span>Burned</span><span style="font-weight:600;color:var(--success)">${burn}${burn > 0 ? ' ✓' : ''}</span></div>
+        <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--info)"></span>Base Goal</span><span style="font-weight:600">${baseGoal.toLocaleString()}</span></div>
         <div class="calorie-info-row"><span><span class="calorie-dot" style="background:var(--text-muted)"></span>Remaining</span><span style="font-weight:600;color:var(--accent)">${remaining}</span></div>
       </div>
     </div>`;
@@ -774,9 +779,9 @@ function renderDashboard() {
 
   // Coach insight
   const insights = [
-    `<strong>Your deficit is on track.</strong> You've consumed ${t.cals} of ${goal} calories. ${remaining > 0 ? `You have ${remaining} left for the day — keep protein high.` : 'You\'ve hit your limit. Stay the course.'}`,
+    `<strong>Your deficit is on track.</strong> You've consumed ${t.cals} of ${goal} calories${burn > 0 ? ' (adjusted for your workout)' : ''}. ${remaining > 0 ? `You have ${remaining} left for the day — keep protein high.` : 'You\'ve hit your limit. Stay the course.'}`,
     `<strong>${t.protein}g protein so far.</strong> ${t.protein >= settings.proteinGoal * 0.7 ? 'Great pace on protein today.' : `You need ${settings.proteinGoal - t.protein}g more — prioritize protein at your next meal.`}`,
-    burn > 0 ? `<strong>${burn} calories burned today.</strong> That effort earns you some flexibility — use it wisely at dinner.` : `<strong>Rest day vibes.</strong> No workout logged yet. Your calorie goal is set for a lower-burn day.`
+    burn > 0 ? `<strong>${burn} calories burned today.</strong> Your goal adjusted from ${baseGoal.toLocaleString()} to ${goal.toLocaleString()} kcal — eat back those calories to maintain your deficit, not starve yourself.` : `<strong>Rest day vibes.</strong> No workout logged yet. Your calorie goal stays at ${baseGoal.toLocaleString()} kcal.`
   ];
   document.getElementById('dashCoachInsight').innerHTML = insights[Math.floor(Date.now()/86400000) % insights.length];
 
@@ -785,7 +790,9 @@ function renderDashboard() {
 
 function renderFoodLog() {
   const t = todayTotals();
-  document.getElementById('foodCalSummary').textContent = `${t.cals} / ${settings.calorieGoal} kcal`;
+  const adjGoal = adjustedCalorieGoal();
+  const burn = todayBurn();
+  document.getElementById('foodCalSummary').textContent = `${t.cals} / ${adjGoal} kcal${burn > 0 ? ' (adjusted)' : ''}`;
 
   // Staples
   document.getElementById('stapleSection').innerHTML = `
@@ -1175,17 +1182,18 @@ function sendMessage() {
 
 function getCoachResponse(text) {
   const t = todayTotals(); const burn = todayBurn();
+  const goal = adjustedCalorieGoal(); const baseGoal = settings.calorieGoal;
   const lower = text.toLowerCase();
   if (lower.includes('protein') || lower.includes('macro'))
     return `You're at ${t.protein}g of protein — ${Math.round(t.protein/settings.proteinGoal*100)}% of your ${settings.proteinGoal}g target. ${t.protein < settings.proteinGoal*0.7 ? 'Prioritize protein at your next meal. Chicken, fish, or a shake would help close the gap.' : 'Solid progress. One more protein-rich meal and you\'re there.'}`;
   if (lower.includes('snack') || lower.includes('hungry'))
     return 'If you\'re hungry, go high-protein and low-cal:<br><br>- Turkey roll-ups with mustard (~80 cal, 12g P)<br>- String cheese (~80 cal, 7g P)<br>- Hard boiled egg (~70 cal, 6g P)<br><br>Keep it light so you have room for a proper meal.';
   if (lower.includes('week') || lower.includes('plan') || lower.includes('focus'))
-    return `Here's the game plan:<br><br><strong>1. Stay in deficit</strong> — you're at ${settings.calorieGoal} cal/day target.<br><strong>2. Hit protein</strong> — ${settings.proteinGoal}g daily for recovery.<br><strong>3. Stay active</strong> — ${todayWorkouts().length > 0 ? 'Good work today.' : 'Try to get a workout in.'}<br><br>Consistency beats perfection. Keep showing up.`;
+    return `Here's the game plan:<br><br><strong>1. Stay in deficit</strong> — your base target is ${baseGoal} cal/day${burn > 0 ? ', adjusted to '+goal+' with today\'s workout' : ''}.<br><strong>2. Hit protein</strong> — ${settings.proteinGoal}g daily for recovery.<br><strong>3. Stay active</strong> — ${todayWorkouts().length > 0 ? 'Good work today.' : 'Try to get a workout in.'}<br><br>Consistency beats perfection. Keep showing up.`;
   if (lower.includes('dinner') || lower.includes('eat') || lower.includes('meal'))
-    return `You've got ${Math.max(0, settings.calorieGoal - t.cals)} calories remaining. For dinner, aim for a protein-forward meal — grilled chicken, fish, or lean steak with vegetables. Skip heavy sauces and you'll finish the day strong.`;
-  const remaining = settings.calorieGoal - t.cals;
-  return `Here's where you stand: ${t.cals} calories consumed, ${burn} burned${burn>0?'':' (no workout yet)'}. You have ${remaining > 0 ? remaining + ' calories left' : 'hit your limit'}. ${t.protein < settings.proteinGoal*0.7 ? 'Focus on protein at your next meal.' : 'Macros are looking solid. Stay the course.'}`;
+    return `You've got ${Math.max(0, goal - t.cals)} calories remaining${burn > 0 ? ' (goal adjusted for your '+burn+' cal workout)' : ''}. For dinner, aim for a protein-forward meal — grilled chicken, fish, or lean steak with vegetables. Skip heavy sauces and you'll finish the day strong.`;
+  const remaining = goal - t.cals;
+  return `Here's where you stand: ${t.cals} calories consumed${burn > 0 ? ', '+burn+' burned — goal adjusted to '+goal : ''}. You have ${remaining > 0 ? remaining + ' calories left' : 'hit your limit'}. ${t.protein < settings.proteinGoal*0.7 ? 'Focus on protein at your next meal.' : 'Macros are looking solid. Stay the course.'}`;
 }
 
 function getPhotoResponse() {
