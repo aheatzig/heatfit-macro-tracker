@@ -584,14 +584,14 @@ const defaultSettings = {
   targetRate: '1.0', goalWeight: 175, startWeight: 191,
   secondaryGoals: ['Strength', 'Endurance'],
   persona: 'Michael', responseLength: 'Medium', emojiUse: 'A Few',
-  stravaConnected: false, age: 30, manualMacros: false, claudeApiKey: '',
+  stravaConnected: false, age: 30, manualMacros: false, geminiApiKey: '',
   notifications: { morning: true, breakfast: true, lunch: true, dinner: true, recap: true, weekly: false },
   mealWindows: { breakfast: '7:00 AM - 9:00 AM', lunch: '12:00 PM - 1:00 PM', dinner: '6:00 PM - 8:00 PM' }
 };
 
 let settings = loadData('settings', defaultSettings);
 // Migrate: ensure new fields exist with correct defaults
-if (settings.claudeApiKey === undefined) settings.claudeApiKey = '';
+if (settings.geminiApiKey === undefined) settings.geminiApiKey = '';
 if (settings.stravaConnected === undefined) settings.stravaConnected = false;
 // Fix strava being true when user never actually connected via OAuth
 if (!localStorage.getItem('hf_stravaAuthed')) settings.stravaConnected = false;
@@ -990,16 +990,16 @@ function renderSettings() {
       <div class="settings-row" style="margin-top:6px;flex-direction:column;align-items:stretch;gap:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-weight:600;font-size:0.9rem;">Claude AI Coach</div>
-            <div style="font-size:0.72rem;color:var(--text-secondary);">Powers real AI coaching conversations</div>
+            <div style="font-weight:600;font-size:0.9rem;">AI Coach (Gemini)</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary);">Powers real AI coaching conversations — free</div>
           </div>
-          <span style="font-size:0.78rem;font-weight:600;color:${s.claudeApiKey?'var(--success)':'var(--text-muted)'};">${s.claudeApiKey?'Active ✓':'Not set'}</span>
+          <span style="font-size:0.78rem;font-weight:600;color:${s.geminiApiKey?'var(--success)':'var(--text-muted)'};">${s.geminiApiKey?'Active ✓':'Not set'}</span>
         </div>
         <div style="display:flex;gap:8px;">
-          <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-..." value="${s.claudeApiKey||''}" style="flex:1;font-size:0.82rem;" />
+          <input type="password" class="form-input" id="apiKeyInput" placeholder="AIza..." value="${s.geminiApiKey||''}" style="flex:1;font-size:0.82rem;" />
           <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
         </div>
-        <div style="font-size:0.72rem;color:var(--text-secondary);">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent);">console.anthropic.com</a></div>
+        <div style="font-size:0.72rem;color:var(--text-secondary);">Free — get your key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com/apikey</a></div>
       </div>
     </div>
     <div class="settings-section">
@@ -1264,9 +1264,9 @@ function toggleStrava() {
 // API Key
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
-  settings.claudeApiKey = key;
+  settings.geminiApiKey = key;
   save(); renderAll();
-  if (key) alert('Claude API key saved! Your coach is now AI-powered.');
+  if (key) alert('Gemini API key saved! Your coach is now AI-powered.');
 }
 
 // Chat
@@ -1326,68 +1326,60 @@ RULES:
 - When discussing calories, reference the adjusted goal (base + workout burn) to maintain deficit`;
 }
 
-async function callClaudeAPI(userText, imageData) {
-  const apiKey = settings.claudeApiKey;
+async function callCoachAPI(userText, imageData) {
+  const apiKey = settings.geminiApiKey;
   if (!apiKey) return getFallbackResponse(userText);
 
   try {
-    const messages = [];
-    // Include last 10 messages for context
+    // Build Gemini conversation contents
+    const contents = [];
+
+    // Add conversation history (last 10 messages)
     const recentChat = chatHistory.slice(-10);
     recentChat.forEach(m => {
-      if (m.role === 'coach') {
-        messages.push({ role: 'assistant', content: m.text.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '') });
-      } else {
-        const content = [];
-        if (m.image) {
-          const base64 = m.image.split(',')[1];
-          const mediaType = m.image.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
-          content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
-        }
-        if (m.text) content.push({ type: 'text', text: m.text });
-        if (content.length) messages.push({ role: 'user', content });
+      const parts = [];
+      if (m.role === 'user' && m.image) {
+        const base64 = m.image.split(',')[1];
+        const mimeType = m.image.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+        parts.push({ inlineData: { mimeType, data: base64 } });
       }
+      const text = (m.text || '').replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '');
+      if (text) parts.push({ text });
+      if (parts.length) contents.push({ role: m.role === 'coach' ? 'model' : 'user', parts });
     });
 
     // Add current message
-    const currentContent = [];
+    const currentParts = [];
     if (imageData) {
       const base64 = imageData.split(',')[1];
-      const mediaType = imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
-      currentContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+      const mimeType = imageData.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+      currentParts.push({ inlineData: { mimeType, data: base64 } });
     }
-    currentContent.push({ type: 'text', text: userText || 'What do you think of this meal?' });
-    messages.push({ role: 'user', content: currentContent });
+    currentParts.push({ text: userText || 'What do you think of this meal?' });
+    contents.push({ role: 'user', parts: currentParts });
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        system: buildSystemPrompt(),
-        messages
+        systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
+        contents,
+        generationConfig: { maxOutputTokens: 600, temperature: 0.8 }
       })
     });
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      console.error('Claude API error:', err);
-      if (resp.status === 401) return 'Hmm, looks like your API key isn\'t working. Check it in Settings → Integrations → Claude AI Coach.';
+      console.error('Gemini API error:', err);
+      if (resp.status === 400 || resp.status === 403) return 'Your API key doesn\'t seem to be working. Double-check it in Settings → Integrations → AI Coach.';
       return getFallbackResponse(userText);
     }
 
     const data = await resp.json();
-    const reply = data.content?.[0]?.text || getFallbackResponse(userText);
-    // Convert newlines to <br> for display
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || getFallbackResponse(userText);
     return reply.replace(/\n/g, '<br>');
   } catch (e) {
-    console.error('Claude API call failed:', e);
+    console.error('Gemini API call failed:', e);
     return getFallbackResponse(userText);
   }
 }
@@ -1401,7 +1393,7 @@ function getFallbackResponse(text) {
     return `You're at ${t.protein}g protein out of ${settings.proteinGoal}g. ${t.protein < settings.proteinGoal*0.7 ? 'Try to get more protein at your next meal — chicken, fish, or a shake would help.' : 'Looking good on protein!'}`;
   if (lower.includes('hungry') || lower.includes('snack'))
     return `You've got ${remaining} calories left. Some solid snack options: turkey roll-ups (~80 cal, 12g P), string cheese (~80 cal, 7g P), or hard-boiled eggs (~70 cal, 6g P).`;
-  return `You've eaten ${t.cals} of ${goal} calories today (${remaining} remaining). ${t.protein}g of ${settings.proteinGoal}g protein.${burn > 0 ? ' Your goal was adjusted for the '+burn+' calories you burned.' : ''}<br><br><em style="font-size:0.78rem;color:var(--text-muted);">Add your Claude API key in Settings → Integrations for real AI coaching.</em>`;
+  return `You've eaten ${t.cals} of ${goal} calories today (${remaining} remaining). ${t.protein}g of ${settings.proteinGoal}g protein.${burn > 0 ? ' Your goal was adjusted for the '+burn+' calories you burned.' : ''}<br><br><em style="font-size:0.78rem;color:var(--text-muted);">Add your free Gemini API key in Settings → Integrations for real AI coaching.</em>`;
 }
 
 async function sendMessage() {
@@ -1427,7 +1419,7 @@ async function sendMessage() {
   document.getElementById('chatMessages').appendChild(typingEl);
   typingEl.scrollIntoView({ behavior: 'smooth' });
 
-  const reply = await callClaudeAPI(text, imageData);
+  const reply = await callCoachAPI(text, imageData);
   isCoachTyping = false;
   chatHistory.push({ role: 'coach', text: reply });
   save(); renderChat();
