@@ -392,17 +392,6 @@
       </div>
       <button class="btn btn-secondary btn-sm" onclick="changeFoodDate(1)" id="foodNextBtn" style="padding:8px 12px;">Next →</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button class="btn btn-primary" style="flex:1;padding:14px;" onclick="openFoodModal('photo')">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Photo
-      </button>
-      <button class="btn btn-secondary" style="flex:1;padding:14px;" onclick="openFoodModal('text')">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Describe
-      </button>
-    </div>
-    <div style="margin-bottom:16px;" id="stapleSection"></div>
     <div id="foodLog"></div>
   </section>
 
@@ -508,20 +497,31 @@
     <div id="foodStep1">
       <div class="form-group">
         <label class="form-label">Meal</label>
-        <select class="form-select" id="foodMealType">
+        <select class="form-select" id="foodMealType" onchange="populateStapleDropdown(this.value)">
           <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
         </select>
       </div>
-      <div class="form-group" id="foodPhotoGroup" style="display:none;">
-        <label class="form-label">Photo</label>
-        <input type="file" accept="image/*" capture="environment" id="foodPhotoFile" class="form-input" onchange="handleFoodPhoto(event)" />
-        <div id="foodPhotoPreview" style="margin-top:8px;display:none;">
-          <img id="foodPhotoThumbModal" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-xs);border:1px solid var(--border);" />
-        </div>
+      <div class="form-group" id="foodStapleGroup">
+        <label class="form-label">Quick Add Staple</label>
+        <select class="form-select" id="foodStapleSelect" onchange="handleStapleSelect(this.value)">
+          <option value="">— Select a staple meal —</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">OR DESCRIBE / PHOTO</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Describe what you ate</label>
         <input type="text" class="form-input" id="foodDesc" placeholder="e.g. Grilled chicken breast 6oz, brown rice, steamed broccoli with olive oil" />
+      </div>
+      <div class="form-group" id="foodPhotoGroup">
+        <label class="form-label">Photo (optional)</label>
+        <input type="file" accept="image/*" capture="environment" id="foodPhotoFile" class="form-input" onchange="handleFoodPhoto(event)" />
+        <div id="foodPhotoPreview" style="margin-top:8px;display:none;">
+          <img id="foodPhotoThumbModal" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-xs);border:1px solid var(--border);" />
+        </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="estimateMacros()" id="foodEstimateBtn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
@@ -860,35 +860,12 @@ function renderFoodLog() {
   const adjGoal = isToday ? adjustedCalorieGoal() : settings.calorieGoal;
   document.getElementById('foodCalSummary').textContent = `${viewTotals.cals} / ${adjGoal} kcal${isToday && todayBurn() > 0 ? ' (adjusted)' : ''}`;
 
-  // Staples (only show on today)
-  if (isToday && staples.length > 0) {
-    document.getElementById('stapleSection').innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="card-title" style="margin-bottom:0;">Staple Meals</div>
-      </div>
-      <div class="staple-grid">${staples.map((s, i) => `
-        <div class="staple-card" style="position:relative;">
-          <button onclick="event.stopPropagation();deleteStaple(${i})" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0;line-height:1;" title="Delete staple">&times;</button>
-          <div onclick="quickAddStaple(${i})" style="cursor:pointer;">
-            <div class="staple-name">${s.name}</div>
-            <div class="staple-info">${s.cals} kcal · ${s.protein}g P</div>
-            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:3px;">${(s.categories||[]).join(' · ')}</div>
-          </div>
-        </div>`).join('')}
-      </div>`;
-  } else if (isToday) {
-    document.getElementById('stapleSection').innerHTML = '';
-  } else {
-    document.getElementById('stapleSection').innerHTML = '';
-  }
-
   // Meals grouped
   const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   let html = '';
   groups.forEach(g => {
     const items = viewMeals.filter(m => m.meal === g);
     const totalCals = items.reduce((s, m) => s + m.cals, 0);
-    const categoryStaples = staples.filter(s => (s.categories || []).includes(g));
 
     html += `<div class="meal-section"><div class="meal-header"><h3>${g}</h3><span class="meal-cals">${items.length ? totalCals + ' kcal' : 'Not logged'}</span></div>`;
     items.forEach(item => {
@@ -898,19 +875,12 @@ function renderFoodLog() {
       </div>`;
     });
 
-    // Add buttons: quick staple dropdown + new entry
-    html += `<div style="display:flex;gap:8px;margin-top:4px;">`;
-    if (isToday && categoryStaples.length > 0) {
-      html += `<div style="flex:1;position:relative;">
-        <select class="form-select" onchange="addStapleByName(this.value,'${g}');this.value='';" style="font-size:0.82rem;padding:12px;background:var(--bg-secondary);border:2px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);">
-          <option value="">⚡ Quick add staple...</option>
-          ${categoryStaples.map(s => `<option value="${s.name}">${s.name} (${s.cals} cal)</option>`).join('')}
-        </select>
-      </div>`;
+    // Add + New button only
+    if (isToday) {
+      html += `<button class="add-meal-btn" style="width:100%;margin-top:4px;" onclick="openFoodModal('${g}')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New</button>`;
     }
-    html += `<button class="add-meal-btn" style="${categoryStaples.length > 0 ? 'flex:1;' : 'width:100%;'}margin-top:0;" onclick="openFoodModal('text','${g}')">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New</button>`;
-    html += `</div></div>`;
+    html += `</div>`;
   });
   document.getElementById('foodLog').innerHTML = html;
 }
@@ -1091,11 +1061,37 @@ function renderChat() {
 // ============ ACTIONS ============
 let foodPhotoData = null;
 
-function openFoodModal(mode, meal) {
+function openFoodModal(meal) {
   resetFoodModal();
-  document.getElementById('foodPhotoGroup').style.display = mode === 'photo' ? 'block' : 'none';
-  document.getElementById('foodMealType').value = meal || guessNextMeal();
+  const mealType = meal || guessNextMeal();
+  document.getElementById('foodMealType').value = mealType;
+  populateStapleDropdown(mealType);
   document.getElementById('foodModal').classList.add('open');
+}
+
+function populateStapleDropdown(mealType) {
+  const sel = document.getElementById('foodStapleSelect');
+  const filtered = staples.filter(s => (s.categories || []).includes(mealType));
+  sel.innerHTML = '<option value="">— Select a staple meal —</option>' +
+    filtered.map((s, i) => {
+      const origIdx = staples.indexOf(s);
+      return `<option value="${origIdx}">${s.name} (${s.cals} cal · ${s.protein}g P)</option>`;
+    }).join('');
+  document.getElementById('foodStapleGroup').style.display = filtered.length > 0 ? 'block' : 'none';
+}
+
+function handleStapleSelect(val) {
+  if (val === '') return;
+  const s = staples[parseInt(val)];
+  if (!s) return;
+  const meal = document.getElementById('foodMealType').value;
+  meals.push({
+    id: Date.now().toString(), date: today(), meal: meal,
+    name: s.name, desc: '', cals: s.cals, protein: s.protein, carbs: s.carbs, fat: s.fat
+  });
+  save();
+  closeModal('foodModal');
+  renderAll();
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -1109,6 +1105,7 @@ function resetFoodModal() {
   document.getElementById('foodSaveStaple').checked = false;
   document.getElementById('foodEstimateBtn').disabled = false;
   document.getElementById('foodPhotoPreview').style.display = 'none';
+  document.getElementById('foodStapleSelect').value = '';
   foodPhotoData = null;
 }
 
@@ -1128,6 +1125,31 @@ function showManualEntry() {
   document.getElementById('foodStep3').style.display = 'block';
   document.getElementById('foodAiNote').innerHTML = '<strong>Manual entry</strong> — Enter the macros yourself.';
   document.getElementById('foodName').value = document.getElementById('foodDesc').value || '';
+}
+
+// Robust JSON extractor — handles code fences, thinking tokens, partial JSON, etc.
+function extractFoodJSON(raw, fallbackName) {
+  if (!raw) return null;
+  let txt = raw;
+  // 1. Try direct parse first
+  try { const p = JSON.parse(txt); if (p.calories !== undefined) return p; } catch(e) {}
+  // 2. Strip everything outside the first { ... last }
+  const firstBrace = txt.indexOf('{');
+  const lastBrace = txt.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const candidate = txt.slice(firstBrace, lastBrace + 1);
+    try { const p = JSON.parse(candidate); if (p.calories !== undefined) return p; } catch(e) {}
+    // 3. Try fixing common issues: trailing commas, single quotes
+    let fixed = candidate.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    try { const p = JSON.parse(fixed); if (p.calories !== undefined) return p; } catch(e) {}
+  }
+  // 4. Regex fallback: extract individual values
+  const getNum = (key) => { const m = txt.match(new RegExp('"' + key + '"\\s*:\\s*(\\d+)')); return m ? parseInt(m[1]) : 0; };
+  const getName = () => { const m = txt.match(/"name"\s*:\s*"([^"]+)"/); return m ? m[1] : (fallbackName || 'Meal'); };
+  const getNote = () => { const m = txt.match(/"note"\s*:\s*"([^"]+)"/); return m ? m[1] : ''; };
+  const cals = getNum('calories');
+  if (cals > 0) return { name: getName(), calories: cals, protein: getNum('protein'), carbs: getNum('carbs'), fat: getNum('fat'), note: getNote() };
+  return null;
 }
 
 async function estimateMacros() {
