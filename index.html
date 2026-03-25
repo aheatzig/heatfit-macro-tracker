@@ -590,6 +590,11 @@ const defaultSettings = {
 };
 
 let settings = loadData('settings', defaultSettings);
+// Migrate: ensure new fields exist with correct defaults
+if (settings.claudeApiKey === undefined) settings.claudeApiKey = '';
+if (settings.stravaConnected === undefined) settings.stravaConnected = false;
+// Fix strava being true when user never actually connected via OAuth
+if (!localStorage.getItem('hf_stravaAuthed')) settings.stravaConnected = false;
 
 // Dynamic calorie/macro calculation based on user profile
 function calcGoals() {
@@ -1246,13 +1251,13 @@ function toggleManualMacros() {
 function toggleStrava() {
   if (settings.stravaConnected) {
     if (confirm('Disconnect Strava? Workout auto-sync will stop.')) {
-      settings.stravaConnected = false; save(); renderAll();
+      settings.stravaConnected = false; localStorage.removeItem('hf_stravaAuthed'); save(); renderAll();
     }
   } else {
     // In production this would redirect to Strava OAuth
     // For now simulate the connection flow
     const mock = confirm('This will redirect to Strava to authorize HeatFit.\n\n(In production, this opens Strava OAuth. For now, click OK to simulate connecting.)');
-    if (mock) { settings.stravaConnected = true; save(); renderAll(); }
+    if (mock) { settings.stravaConnected = true; localStorage.setItem('hf_stravaAuthed','1'); save(); renderAll(); }
   }
 }
 
