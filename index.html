@@ -1168,6 +1168,7 @@ let weights = [];
 let workouts = [];
 let staples = [];
 let chatHistory = [];
+let foodViewDate = today();
 
 function loadAllUserData() {
   loadUserData(); // settings
@@ -2115,7 +2116,6 @@ function deleteWeightEntry(date) {
 }
 
 // Food date navigation
-let foodViewDate = today();
 function changeFoodDate(dir) {
   const d = new Date(foodViewDate + 'T12:00:00');
   d.setDate(d.getDate() + dir);
