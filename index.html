@@ -818,9 +818,13 @@
 
   <!-- WEIGHT -->
   <section id="screen-weight" class="screen">
-    <div class="section-header">
-      <div class="section-title">Weight</div>
-      <div id="weightTotalChange"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="changeWeightDate(-1)" style="padding:8px 12px;">← Prev</button>
+      <div style="text-align:center;">
+        <div class="section-title" id="weightDateLabel" style="font-size:1rem;"></div>
+        <div id="weightTotalChange"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="changeWeightDate(1)" id="weightNextBtn" style="padding:8px 12px;">Next →</button>
     </div>
     <div class="card" style="text-align:center;">
       <div class="weight-input-wrap">
@@ -829,7 +833,7 @@
         <div id="weightDayChange" style="font-size:0.85rem;margin-top:8px;"></div>
       </div>
       <input type="text" id="weightNote" placeholder="Add a note (optional)" style="width:100%;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-primary);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:12px;" />
-      <button class="btn btn-primary btn-full" onclick="logWeight()">Log Weight</button>
+      <button class="btn btn-primary btn-full" id="weightLogBtn" onclick="logWeight()">Log Weight</button>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1169,6 +1173,7 @@ let workouts = [];
 let staples = [];
 let chatHistory = [];
 let foodViewDate = today();
+let weightViewDate = today();
 
 function loadAllUserData() {
   loadUserData(); // settings
@@ -1634,17 +1639,33 @@ function renderFoodLog() {
 }
 
 function renderWeightScreen() {
-  const cw = weights.length ? weights[weights.length-1].weight : (settings.startWeight || 0);
-  const gw = settings.goalWeight || cw;
-  const sw = settings.startWeight || cw;
-  const totalChange = sw ? (cw - sw).toFixed(1) : '0.0';
-  const prevDay = weights.length > 1 ? weights[weights.length-2].weight : cw;
-  const dayChange = (cw - prevDay).toFixed(1);
+  const isWeightToday = weightViewDate === today();
+  const dateLabel = isWeightToday ? 'Today' : formatDate(weightViewDate);
+  document.getElementById('weightDateLabel').textContent = dateLabel;
+  document.getElementById('weightNextBtn').style.visibility = isWeightToday ? 'hidden' : 'visible';
 
-  document.getElementById('weightInput').value = cw;
+  // Find entry for selected date
+  const dayEntry = weights.find(w => w.date === weightViewDate);
+  const latestWeight = weights.length ? weights[weights.length-1].weight : (settings.startWeight || 0);
+  const displayWeight = dayEntry ? dayEntry.weight : latestWeight;
+  const gw = settings.goalWeight || displayWeight;
+  const sw = settings.startWeight || displayWeight;
+  const totalChange = sw ? (displayWeight - sw).toFixed(1) : '0.0';
+
+  // Find previous day's entry for comparison
+  const sortedWeights = [...weights].sort((a,b) => a.date.localeCompare(b.date));
+  const dayIdx = sortedWeights.findIndex(w => w.date === weightViewDate);
+  const prevEntry = dayIdx > 0 ? sortedWeights[dayIdx - 1] : (sortedWeights.length > 0 && !dayEntry ? sortedWeights[sortedWeights.length - 1] : null);
+  const dayChange = prevEntry ? (displayWeight - prevEntry.weight).toFixed(1) : '0.0';
+
+  document.getElementById('weightInput').value = displayWeight;
+  document.getElementById('weightNote').value = dayEntry ? (dayEntry.note || '') : '';
   document.getElementById('weightUnit').textContent = settings.units === 'imperial' ? 'lbs' : 'kg';
   document.getElementById('weightTotalChange').innerHTML = `<span class="chip ${parseFloat(totalChange)<=0?'chip-success':'chip-danger'}">${totalChange>0?'+':''}${totalChange} lbs total</span>`;
-  document.getElementById('weightDayChange').innerHTML = `<span style="color:${parseFloat(dayChange)<=0?'var(--success)':'var(--danger)'}">${dayChange>0?'+':''}${dayChange} lbs from yesterday</span>`;
+  document.getElementById('weightDayChange').innerHTML = dayEntry
+    ? `<span style="color:${parseFloat(dayChange)<=0?'var(--success)':'var(--danger)'}">${dayChange>0?'+':''}${dayChange} lbs from previous</span>`
+    : `<span style="color:var(--text-muted);">No entry for this day</span>`;
+  document.getElementById('weightLogBtn').textContent = dayEntry ? 'Update Weight' : 'Log Weight';
   document.getElementById('weightGoalLabel').textContent = `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}`;
 
   // Stats
@@ -2092,10 +2113,10 @@ function logWeight() {
   const w = parseFloat(document.getElementById('weightInput').value);
   if (!w) return;
   const note = document.getElementById('weightNote').value;
-  const existing = weights.findIndex(e => e.date === today());
-  if (existing >= 0) { weights[existing] = { date: today(), weight: w, note }; }
-  else { weights.push({ date: today(), weight: w, note }); }
-  document.getElementById('weightNote').value = '';
+  const targetDate = weightViewDate;
+  const existing = weights.findIndex(e => e.date === targetDate);
+  if (existing >= 0) { weights[existing] = { date: targetDate, weight: w, note }; }
+  else { weights.push({ date: targetDate, weight: w, note }); weights.sort((a,b) => a.date.localeCompare(b.date)); }
   save(); renderAll();
 }
 
@@ -2125,6 +2146,15 @@ function changeFoodDate(dir) {
   renderFoodLog();
 }
 function foodDateMeals() { return meals.filter(m => m.date === foodViewDate); }
+
+function changeWeightDate(dir) {
+  const d = new Date(weightViewDate + 'T12:00:00');
+  d.setDate(d.getDate() + dir);
+  const ds = d.toISOString().slice(0, 10);
+  if (ds > today()) return;
+  weightViewDate = ds;
+  renderWeightScreen();
+}
 
 function openWorkoutModal() {
   const types = ['Running','Cycling','Swimming','Weight Training','HIIT','Yoga','Walking','Other'];
@@ -2612,17 +2642,23 @@ function drawWeightChart(canvasId, height) {
   ctx.scale(dpr, dpr);
 
   const w = rect.width, h = height;
-  const pad = { top: 10, right: 10, bottom: 25, left: 40 };
-  const cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
+  const pad = { top: 20, right: 10, bottom: 25, left: 40 };
+  const cWidth = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
 
-  const data = weights.slice(-28).map(e => e.weight);
-  if (!data.length) return;
+  const entries = weights.slice(-28);
+  const data = entries.map(e => e.weight);
+  if (!data.length) {
+    ctx.fillStyle = '#737373'; ctx.font = '13px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('No weight data yet', w/2, h/2);
+    return;
+  }
   const gw = settings.goalWeight || Math.min(...data) - 2;
   const minW = Math.min(gw - 1, Math.min(...data) - 1);
   const maxW = Math.max(...data) + 1;
-  const xStep = data.length > 1 ? cw / (data.length - 1) : cw;
+  const xStep = data.length > 1 ? cWidth / (data.length - 1) : cWidth;
   const yScale = v => pad.top + ch - ((v - minW) / (maxW - minW)) * ch;
 
+  // Grid
   ctx.strokeStyle = '#333'; ctx.lineWidth = 0.5;
   for (let v = Math.ceil(minW); v <= Math.floor(maxW); v += 2) {
     const y = yScale(v);
@@ -2631,15 +2667,18 @@ function drawWeightChart(canvasId, height) {
     ctx.fillText(v, pad.left - 6, y + 3);
   }
 
+  // Goal line
   const goalY = yScale(gw);
   ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
   ctx.beginPath(); ctx.moveTo(pad.left, goalY); ctx.lineTo(w - pad.right, goalY); ctx.stroke();
   ctx.setLineDash([]);
 
+  // Line
   ctx.strokeStyle = '#f5f5f5'; ctx.lineWidth = 2; ctx.beginPath();
   data.forEach((v, i) => { const x = pad.left + i * xStep; i === 0 ? ctx.moveTo(x, yScale(v)) : ctx.lineTo(x, yScale(v)); });
   ctx.stroke();
 
+  // Fill
   const grad = ctx.createLinearGradient(0, pad.top, 0, h);
   grad.addColorStop(0, 'rgba(245,158,11,0.15)'); grad.addColorStop(1, 'rgba(245,158,11,0)');
   ctx.fillStyle = grad; ctx.beginPath();
@@ -2647,9 +2686,47 @@ function drawWeightChart(canvasId, height) {
   ctx.lineTo(pad.left + (data.length - 1) * xStep, h - pad.bottom);
   ctx.lineTo(pad.left, h - pad.bottom); ctx.closePath(); ctx.fill();
 
-  const lx = pad.left + (data.length - 1) * xStep, ly = yScale(data[data.length - 1]);
-  ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI * 2); ctx.fill();
+  // Draw dots on all points (small for regular, larger for entries with notes)
+  const pointCoords = [];
+  data.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = yScale(v);
+    const hasNote = entries[i] && entries[i].note;
+    const dotSize = hasNote ? 6 : 3.5;
+    ctx.fillStyle = hasNote ? '#f59e0b' : '#f5f5f5';
+    ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI * 2); ctx.fill();
+    if (hasNote) {
+      ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    pointCoords.push({ x, y, entry: entries[i] });
+  });
+
+  // Store point coords for click handler
+  canvas._pointCoords = pointCoords;
+  canvas._pad = pad;
+  canvas._dpr = dpr;
+
+  // Attach click handler (only once)
+  if (!canvas._hasClickHandler) {
+    canvas._hasClickHandler = true;
+    canvas.addEventListener('click', function(e) {
+      const crect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - crect.left);
+      const my = (e.clientY - crect.top);
+      const pts = canvas._pointCoords;
+      if (!pts) return;
+      let closest = null, minDist = 30;
+      pts.forEach(p => {
+        const dist = Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2);
+        if (dist < minDist) { minDist = dist; closest = p; }
+      });
+      if (closest && closest.entry) {
+        const e = closest.entry;
+        const noteText = e.note ? '\nNote: ' + e.note : '';
+        alert(formatDate(e.date) + ': ' + e.weight + ' lbs' + noteText);
+      }
+    });
+  }
 }
 
 // Click outside modal to close
