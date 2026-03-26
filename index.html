@@ -398,6 +398,36 @@
   <div class="login-logo">HeatFit</div>
   <div class="login-tagline">Track macros, weight, and workouts.<br>AI-powered coaching to reach your goals.</div>
   <div class="login-gsi-wrap" id="gsiButtonWrap"></div>
+  <div style="display:flex;align-items:center;gap:12px;margin:20px 0;width:100%;max-width:280px;">
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+    <span style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">OR</span>
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+  </div>
+  <!-- Email Sign Up / Sign In toggle -->
+  <div id="emailAuthSection" style="width:100%;max-width:320px;">
+    <div id="emailSignupForm">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" class="form-input" id="signupFirst" placeholder="First name" style="flex:1;" />
+        <input type="text" class="form-input" id="signupLast" placeholder="Last name" style="flex:1;" />
+      </div>
+      <input type="email" class="form-input" id="signupEmail" placeholder="Email" style="margin-bottom:8px;" />
+      <input type="password" class="form-input" id="signupPassword" placeholder="Password (6+ characters)" style="margin-bottom:4px;" />
+      <div id="emailAuthError" style="font-size:0.75rem;color:var(--danger);margin-bottom:8px;min-height:18px;"></div>
+      <button class="btn btn-primary btn-full" onclick="emailSignUp()" style="margin-bottom:10px;">Create Account</button>
+      <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;">
+        Already have an account? <a href="#" onclick="toggleEmailAuth('login');return false;" style="color:var(--accent);font-weight:600;">Sign in</a>
+      </div>
+    </div>
+    <div id="emailLoginForm" style="display:none;">
+      <input type="email" class="form-input" id="loginEmail" placeholder="Email" style="margin-bottom:8px;" />
+      <input type="password" class="form-input" id="loginPassword" placeholder="Password" style="margin-bottom:4px;" />
+      <div id="emailLoginError" style="font-size:0.75rem;color:var(--danger);margin-bottom:8px;min-height:18px;"></div>
+      <button class="btn btn-primary btn-full" onclick="emailSignIn()" style="margin-bottom:10px;">Sign In</button>
+      <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;">
+        Don't have an account? <a href="#" onclick="toggleEmailAuth('signup');return false;" style="color:var(--accent);font-weight:600;">Sign up</a>
+      </div>
+    </div>
+  </div>
   <div class="login-footer">By signing in, you agree to use HeatFit at your own discretion.<br>HeatFit is not a medical professional.</div>
 </div>
 
@@ -1017,6 +1047,61 @@ function initGoogleAuth() {
   google.accounts.id.renderButton(document.getElementById('gsiButtonWrap'), {
     theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'pill', width: 280
   });
+}
+
+// Email Sign Up / Sign In
+function toggleEmailAuth(mode) {
+  document.getElementById('emailSignupForm').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('emailLoginForm').style.display = mode === 'login' ? 'block' : 'none';
+  document.getElementById('emailAuthError').textContent = '';
+  document.getElementById('emailLoginError').textContent = '';
+}
+
+function emailSignUp() {
+  const first = document.getElementById('signupFirst').value.trim();
+  const last = document.getElementById('signupLast').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPassword').value;
+  const errEl = document.getElementById('emailAuthError');
+  if (!first || !last) { errEl.textContent = 'Please enter your first and last name.'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email.'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  // Check if account already exists
+  const existing = localStorage.getItem('hf_emailUser_' + email.toLowerCase());
+  if (existing) { errEl.textContent = 'An account with this email already exists. Sign in instead.'; return; }
+  // Create account
+  const userId = 'email_' + Date.now();
+  const user = { id: userId, name: first + ' ' + last, email: email, picture: '' };
+  // Store credentials (hashed password for local-only use)
+  localStorage.setItem('hf_emailUser_' + email.toLowerCase(), JSON.stringify({ ...user, passHash: simpleHash(pass) }));
+  currentUser = user;
+  localStorage.setItem('hf_currentUser', JSON.stringify(currentUser));
+  boot();
+}
+
+function emailSignIn() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('emailLoginError');
+  if (!email) { errEl.textContent = 'Please enter your email.'; return; }
+  if (!pass) { errEl.textContent = 'Please enter your password.'; return; }
+  const stored = localStorage.getItem('hf_emailUser_' + email.toLowerCase());
+  if (!stored) { errEl.textContent = 'No account found. Sign up first.'; return; }
+  const data = JSON.parse(stored);
+  if (data.passHash !== simpleHash(pass)) { errEl.textContent = 'Incorrect password.'; return; }
+  currentUser = { id: data.id, name: data.name, email: data.email, picture: data.picture || '' };
+  localStorage.setItem('hf_currentUser', JSON.stringify(currentUser));
+  boot();
+}
+
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + c;
+    hash |= 0;
+  }
+  return hash.toString(36);
 }
 
 // Default settings (no hardcoded user data)
