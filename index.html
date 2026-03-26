@@ -1584,9 +1584,32 @@ function renderFoodLog() {
   const adjGoal = isToday ? adjustedCalorieGoal() : settings.calorieGoal;
   document.getElementById('foodCalSummary').textContent = `${viewTotals.cals} / ${adjGoal} kcal${isToday && todayBurn() > 0 ? ' (adjusted)' : ''}`;
 
+  let html = '';
+
+  // Staple meals carousel (only show on today)
+  if (isToday && staples.length > 0) {
+    html += `<div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="card-title" style="margin-bottom:0;">Saved Meals</div>
+      </div>
+      <div class="staple-grid">`;
+    staples.forEach(function(s, i) {
+      html += `<div class="staple-card" style="position:relative;">
+        <button onclick="event.stopPropagation();deleteStaple(${i})" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;padding:0;line-height:1;" title="Delete">&times;</button>
+        <div class="staple-name">${s.name}</div>
+        <div class="staple-info">${s.cals} kcal · ${s.protein}g P</div>
+        <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">`;
+      var cats = s.categories || ['Breakfast','Lunch','Dinner','Snack'];
+      cats.forEach(function(cat) {
+        html += `<button onclick="event.stopPropagation();quickAddStaple(${i},'${cat}')" style="padding:3px 8px;font-size:0.65rem;font-weight:600;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">${cat}</button>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+  }
+
   // Meals grouped
   const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-  let html = '';
   groups.forEach(g => {
     const items = viewMeals.filter(m => m.meal === g);
     const totalCals = items.reduce((s, m) => s + m.cals, 0);
@@ -1599,7 +1622,7 @@ function renderFoodLog() {
       </div>`;
     });
 
-    // Add + New button only
+    // Add + New button
     if (isToday) {
       html += `<button class="add-meal-btn" style="width:100%;margin-top:4px;" onclick="openFoodModal('${g}')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New</button>`;
@@ -2025,12 +2048,18 @@ function deleteFood(id) {
   save(); renderAll();
 }
 
-function quickAddStaple(i) {
+function quickAddStaple(i, mealCat) {
   const s = staples[i];
+  if (!s) return;
   meals.push({
-    id: Date.now().toString(), date: today(), meal: guessNextMeal(),
+    id: Date.now().toString(), date: today(), meal: mealCat || guessNextMeal(),
     name: s.name, desc: '', cals: s.cals, protein: s.protein, carbs: s.carbs, fat: s.fat
   });
+  save(); renderAll();
+}
+function deleteStaple(i) {
+  if (!confirm('Remove "' + staples[i].name + '" from saved meals?')) return;
+  staples.splice(i, 1);
   save(); renderAll();
 }
 function addStapleByName(name, mealCategory) {
