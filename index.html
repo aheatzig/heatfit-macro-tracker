@@ -1923,45 +1923,51 @@ Be conservative. Whole numbers only.`;
     }
     contents[0].parts.push({ text: prompt });
 
-    // Single model with patient rate-limit retry (waits increase: 5s, 10s, 15s)
+    // Use gemini-2.5-flash for food (separate rate limit pool from chat's 2.0-flash)
     document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
     let result = null;
-    const model = 'gemini-2.0-flash';
-    const genConfig = { maxOutputTokens: 500, temperature: 0.2, responseMimeType: 'application/json' };
-    const maxRetries = 4;
+    // Try 2.5-flash first (different rate pool), fall back to 2.0-flash
+    const foodModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const genConfig = { maxOutputTokens: 500, temperature: 0.2 };
 
-    for (let i = 0; i < maxRetries; i++) {
-      if (i > 0) {
-        var waitSec = i * 5;
-        console.log('[Food AI] Attempt ' + (i+1) + ' - waiting ' + waitSec + 's...');
-        document.getElementById('foodEstimateStatus').textContent = 'Rate limited \u2014 retrying in ' + waitSec + 's...';
-        await new Promise(function(r) { setTimeout(r, waitSec * 1000); });
-        document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
-      }
+    for (const model of foodModels) {
+      console.log('[Food AI] Trying model:', model);
+      var resp;
       try {
-        console.log('[Food AI] Attempt ' + (i+1) + ' of ' + maxRetries);
-        var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey, {
+        resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: contents, generationConfig: genConfig })
         });
-        console.log('[Food AI] Status:', resp.status);
-        if (resp.status === 429) { continue; }
-        if (resp.status === 400 && genConfig.responseMimeType) {
-          console.log('[Food AI] 400 error, removing responseMimeType...');
-          delete genConfig.responseMimeType;
-          continue;
+      } catch(e) { console.error('[Food AI] Fetch error:', e); continue; }
+      console.log('[Food AI]', model, 'status:', resp.status);
+      if (resp.status === 429) {
+        console.log('[Food AI]', model, 'rate limited, trying next model or waiting...');
+        if (model === foodModels[foodModels.length - 1]) {
+          // Last model also rate limited — wait 20s and retry once
+          document.getElementById('foodEstimateStatus').textContent = 'Rate limited \u2014 retrying in 20s...';
+          await new Promise(function(r) { setTimeout(r, 20000); });
+          document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
+          try {
+            resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: contents, generationConfig: genConfig })
+            });
+            if (resp.ok) {
+              var d = await resp.json();
+              result = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
+              if (result) break;
+            }
+          } catch(e) {}
         }
-        if (!resp.ok) {
-          console.log('[Food AI] Error:', resp.status);
-          continue;
-        }
-        var data = await resp.json();
-        result = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-        if (result) { console.log('[Food AI] Success on attempt ' + (i+1)); break; }
-      } catch(e) {
-        console.error('[Food AI] Error:', e);
         continue;
       }
+      if (resp.status === 404) { console.log('[Food AI]', model, 'not found, trying next...'); continue; }
+      if (!resp.ok) { console.log('[Food AI]', model, 'error:', resp.status); continue; }
+      try {
+        var data = await resp.json();
+        result = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+        if (result) { console.log('[Food AI] Success with', model); break; }
+      } catch(e) { console.error('[Food AI] Parse error:', e); continue; }
     }
 
     if (result) {
