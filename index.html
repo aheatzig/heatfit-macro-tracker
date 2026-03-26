@@ -1925,7 +1925,16 @@ function extractFoodJSON(raw, fallbackName) {
   const getName = () => { const m = txt.match(/"name"\s*:\s*"([^"]+)"/); return m ? m[1] : (fallbackName || 'Meal'); };
   const getNote = () => { const m = txt.match(/"note"\s*:\s*"([^"]+)"/); return m ? m[1] : ''; };
   const cals = getNum('calories');
-  if (cals > 0) return { name: getName(), calories: cals, protein: getNum('protein'), carbs: getNum('carbs'), fat: getNum('fat'), note: getNote() };
+  if (cals > 0) {
+    let protein = getNum('protein'), carbs = getNum('carbs'), fat = getNum('fat');
+    // Sanity check: if macros are all 0 but calories exist, estimate a rough split
+    if (protein === 0 && carbs === 0 && fat === 0 && cals > 0) {
+      protein = Math.round(cals * 0.30 / 4);
+      carbs = Math.round(cals * 0.40 / 4);
+      fat = Math.round(cals * 0.30 / 9);
+    }
+    return { name: getName(), calories: cals, protein, carbs, fat, note: getNote() || 'Macros estimated — review and adjust.' };
+  }
   return null;
 }
 
@@ -1951,12 +1960,18 @@ async function estimateMacros() {
   document.getElementById('foodEstimateBtn').disabled = true;
 
   try {
-    const prompt = `Estimate the nutritional macros for this meal. Reply with ONLY a JSON object, nothing else. No explanation, no markdown, no code fences. Just the raw JSON:
-{"name":"short name","calories":0,"protein":0,"carbs":0,"fat":0,"note":"brief comment"}
+    const prompt = `Estimate the nutritional macros for this meal. You MUST reply with ONLY a JSON object on a single line, nothing else. No markdown, no code fences, no explanation before or after. Just raw JSON.
+
+Format: {"name":"short name","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"note":"one sentence"}
+
+Rules:
+- ALL fields are required. Never omit protein, carbs, or fat.
+- All values must be whole numbers greater than 0 (except fat which can be 0 for very lean meals).
+- protein + carbs + fat should roughly account for the calorie total (protein*4 + carbs*4 + fat*9 ≈ calories).
+- Be conservative and realistic with portion sizes.
 
 Meal: ${desc || 'See the attached photo'}
-Daily targets: ${settings.calorieGoal} cal, ${settings.proteinGoal}g protein.
-Be conservative. Whole numbers only.`;
+Context: Daily targets are ${settings.calorieGoal} cal, ${settings.proteinGoal}g protein.`;
 
     const contents = [{ role: 'user', parts: [] }];
     if (hasPhoto) {
@@ -1973,7 +1988,7 @@ Be conservative. Whole numbers only.`;
     let result = null;
     // Try 2.5-flash first (different rate pool), fall back to 2.0-flash
     const foodModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-    const genConfig = { maxOutputTokens: 500, temperature: 0.2 };
+    const genConfig = { maxOutputTokens: 1024, temperature: 0.2 };
 
     for (const model of foodModels) {
       console.log('[Food AI] Trying model:', model);
