@@ -1452,12 +1452,12 @@ function switchScreen(name) {
 
 // ============ RENDER ============
 function renderAll() {
-  renderDashboard();
-  renderFoodLog();
-  renderWeightScreen();
-  renderWorkouts();
-  renderSettings();
-  renderChat();
+  try { renderDashboard(); } catch(e) { console.error('[Render] Dashboard crash:', e); }
+  try { renderFoodLog(); } catch(e) { console.error('[Render] FoodLog crash:', e); }
+  try { renderWeightScreen(); } catch(e) { console.error('[Render] Weight crash:', e); }
+  try { renderWorkouts(); } catch(e) { console.error('[Render] Workouts crash:', e); }
+  try { renderSettings(); } catch(e) { console.error('[Render] Settings crash:', e); }
+  try { renderChat(); } catch(e) { console.error('[Render] Chat crash:', e); }
 }
 
 function renderDashboard() {
