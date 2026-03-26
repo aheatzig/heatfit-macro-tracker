@@ -627,6 +627,7 @@
       <div class="ob-subtitle">Power your coach with Google's Gemini AI — it's free.</div>
     </div>
     <div class="ob-content">
+      <div style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">With an AI key, your coach can estimate macros from food photos, give personalized advice based on your actual data, and help you plan meals around real-life events. Without it, you'll get basic offline responses only.</div>
       <div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
         <div style="font-size:0.88rem;font-weight:600;margin-bottom:10px;">How to get your free API key:</div>
         <ol style="font-size:0.82rem;color:var(--text-secondary);line-height:1.8;padding-left:18px;">
@@ -640,7 +641,7 @@
         <label class="form-label">Gemini API Key</label>
         <input type="password" class="form-input" id="obGeminiKey" placeholder="AIza..." />
       </div>
-      <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5;">Your key is stored locally on your device and never sent to our servers. Without it, your coach will use basic offline responses.</div>
+      <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5;">Your key is stored only on your device in your browser's local storage and is never sent to HeatFit servers — it goes directly from your browser to Google's API.</div>
     </div>
     <div class="ob-footer">
       <button class="btn btn-primary" onclick="obNext()">Continue</button>
@@ -682,48 +683,12 @@
     </div>
   </div>
 
-  <!-- Step 7: Timezone & Meal Windows -->
+  <!-- Step 7: Notifications -->
   <div class="ob-step" id="obStep7">
     <div class="ob-header">
       <div class="ob-step-num">Step 7 of 8</div>
-      <div class="ob-title">Schedule</div>
-      <div class="ob-subtitle">Help us time reminders and organize your day.</div>
-    </div>
-    <div class="ob-content">
-      <div class="form-group">
-        <label class="form-label">Timezone</label>
-        <input type="text" class="form-input" id="obTimezone" readonly style="color:var(--text-secondary);" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Typical Meal Windows</label>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:80px;font-size:0.85rem;font-weight:600;">Breakfast</span>
-            <select class="form-select" id="obMealBreakfast" style="flex:1;"><option>6:00 AM - 8:00 AM</option><option selected>7:00 AM - 9:00 AM</option><option>8:00 AM - 10:00 AM</option><option>9:00 AM - 11:00 AM</option></select>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:80px;font-size:0.85rem;font-weight:600;">Lunch</span>
-            <select class="form-select" id="obMealLunch" style="flex:1;"><option>11:00 AM - 12:00 PM</option><option selected>12:00 PM - 1:00 PM</option><option>1:00 PM - 2:00 PM</option></select>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:80px;font-size:0.85rem;font-weight:600;">Dinner</span>
-            <select class="form-select" id="obMealDinner" style="flex:1;"><option>5:00 PM - 7:00 PM</option><option selected>6:00 PM - 8:00 PM</option><option>7:00 PM - 9:00 PM</option></select>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ob-footer">
-      <button class="btn btn-primary" onclick="obNext()">Continue</button>
-      <button class="ob-back" onclick="obBack()">Back</button>
-    </div>
-  </div>
-
-  <!-- Step 8: Notifications -->
-  <div class="ob-step" id="obStep8">
-    <div class="ob-header">
-      <div class="ob-step-num">Step 8 of 8</div>
       <div class="ob-title">Notifications</div>
-      <div class="ob-subtitle">Choose which email reminders you'd like to receive.</div>
+      <div class="ob-subtitle">Choose which reminders you'd like to receive.</div>
     </div>
     <div class="ob-content">
       <div class="ob-toggle-row"><div><div class="ob-toggle-label">Morning Check-in</div><div class="ob-toggle-desc">Weight prompt + plan for the day</div></div><div class="toggle-track on" id="obNotifMorning" onclick="this.classList.toggle('on')"></div></div>
@@ -733,6 +698,42 @@
       <div class="ob-toggle-row"><div><div class="ob-toggle-label">Day Recap</div><div class="ob-toggle-desc">End-of-day summary with coach note</div></div><div class="toggle-track on" id="obNotifRecap" onclick="this.classList.toggle('on')"></div></div>
       <div class="ob-toggle-row"><div><div class="ob-toggle-label">Weekly Summary</div><div class="ob-toggle-desc">Sunday evening week-in-review</div></div><div class="toggle-track" id="obNotifWeekly" onclick="this.classList.toggle('on')"></div></div>
       <div style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;text-align:center;">Email notifications coming soon. Your preferences will be saved.</div>
+    </div>
+    <div class="ob-footer">
+      <button class="btn btn-primary" onclick="obSyncMealWindows();obNext();">Continue</button>
+      <button class="ob-back" onclick="obBack()">Back</button>
+    </div>
+  </div>
+
+  <!-- Step 8: Timezone & Meal Windows -->
+  <div class="ob-step" id="obStep8">
+    <div class="ob-header">
+      <div class="ob-step-num">Step 8 of 8</div>
+      <div class="ob-title">Eating Schedule</div>
+      <div class="ob-subtitle">When do you typically eat? We'll use this to time your reminders.</div>
+    </div>
+    <div class="ob-content">
+      <div class="form-group">
+        <label class="form-label">Timezone</label>
+        <input type="text" class="form-input" id="obTimezone" readonly style="color:var(--text-secondary);" />
+      </div>
+      <div class="form-group" id="obMealWindowsGroup">
+        <label class="form-label">Typical Meal Times</label>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="obMealWindowsList">
+          <div id="obMealRowBreakfast" style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Breakfast</span>
+            <select class="form-select" id="obMealBreakfast" style="flex:1;"><option>6:00 AM - 8:00 AM</option><option selected>7:00 AM - 9:00 AM</option><option>8:00 AM - 10:00 AM</option><option>9:00 AM - 11:00 AM</option></select>
+          </div>
+          <div id="obMealRowLunch" style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Lunch</span>
+            <select class="form-select" id="obMealLunch" style="flex:1;"><option>11:00 AM - 12:00 PM</option><option selected>12:00 PM - 1:00 PM</option><option>1:00 PM - 2:00 PM</option></select>
+          </div>
+          <div id="obMealRowDinner" style="display:flex;align-items:center;gap:10px;">
+            <span style="width:80px;font-size:0.85rem;font-weight:600;">Dinner</span>
+            <select class="form-select" id="obMealDinner" style="flex:1;"><option>5:00 PM - 7:00 PM</option><option selected>6:00 PM - 8:00 PM</option><option>7:00 PM - 9:00 PM</option></select>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="ob-footer">
       <button class="btn btn-primary" onclick="obNext()">Finish Setup</button>
@@ -1268,6 +1269,18 @@ function obValidateStep(step) {
     return valid;
   }
   return true;
+}
+
+function obSyncMealWindows() {
+  const bOn = document.getElementById('obNotifBreakfast').classList.contains('on');
+  const lOn = document.getElementById('obNotifLunch').classList.contains('on');
+  const dOn = document.getElementById('obNotifDinner').classList.contains('on');
+  document.getElementById('obMealRowBreakfast').style.display = bOn ? 'flex' : 'none';
+  document.getElementById('obMealRowLunch').style.display = lOn ? 'flex' : 'none';
+  document.getElementById('obMealRowDinner').style.display = dOn ? 'flex' : 'none';
+  // If no meal notifications are on, hide the meal windows section entirely
+  const anyOn = bOn || lOn || dOn;
+  document.getElementById('obMealWindowsGroup').style.display = anyOn ? 'block' : 'none';
 }
 
 function obCollectData() {
