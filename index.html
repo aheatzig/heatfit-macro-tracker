@@ -1337,7 +1337,7 @@ function renderObStep(step) {
   if (stepEl) stepEl.classList.add('active');
   document.getElementById('obProgressFill').style.width = (step / OB_STEPS * 100) + '%';
   // Auto-detect timezone for step 6
-  if (step === 6) {
+  if (step === 8) {
     try { document.getElementById('obTimezone').value = Intl.DateTimeFormat().resolvedOptions().timeZone; }
     catch { document.getElementById('obTimezone').value = 'UTC'; }
   }
@@ -1352,7 +1352,6 @@ function completeOnboarding() {
     ...data,
     name: currentUser ? currentUser.name : '',
     manualMacros: false,
-    geminiApiKey: '',
   };
   saveData('settings', finalSettings);
   saveData('onboarded', true);
