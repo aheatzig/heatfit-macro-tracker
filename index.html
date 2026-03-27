@@ -879,6 +879,10 @@
       </div>
       <button class="btn btn-secondary btn-sm" onclick="changeWorkoutDate(1)" id="workoutNextBtn" style="padding:8px 12px;">Next &rarr;</button>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="openWorkoutModal()" style="flex:1;">+ Log Workout</button>
+      <button class="btn btn-secondary btn-sm" id="stravaSyncBtn" onclick="syncStravaActivities()" style="background:#fc4c02;color:white;border:none;display:none;">⟳ Sync Strava</button>
+    </div>
     <div id="workoutDayList"></div>
     <div class="card" style="margin-top:16px;">
       <div class="card-title">This Week</div>
@@ -1840,7 +1844,7 @@ function renderWorkouts() {
           <svg width="22" height="22" fill="none" stroke="${colors[w.type]||'#737373'}" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
         </div>
         <div class="workout-details">
-          <div class="workout-name">${w.type}</div>
+          <div class="workout-name">${w.type}${w.source === 'strava' ? ' <span style="font-size:0.6rem;color:#fc4c02;font-weight:700;vertical-align:middle;">⬤ Strava</span>' : ''}</div>
           <div class="workout-meta">${w.duration} min${w.distance ? ' · '+w.distance+' mi' : ''} · ${w.effort}${w.notes ? ' · '+w.notes : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -1982,8 +1986,45 @@ function renderChat() {
 
   const persona = settings.persona;
   document.getElementById('chatCoachName').textContent = 'Coach ' + persona;
-  const descs = { Jillian: 'Direct, no-nonsense, pushes hard', Michael: 'Balanced, real, and grounded', Tiara: 'Warm, supportive, and gentle' };
-  document.getElementById('chatCoachDesc').textContent = descs[persona] || '';
+  document.getElementById('chatCoachDesc').textContent = 'Tap to switch coach';
+  const chatAv = document.getElementById('chatCoachAvatar');
+  if (chatAv) {
+    const bgC = { Jillian:'rgba(239,68,68,0.2)', Michael:'rgba(59,130,246,0.2)', Tiara:'rgba(168,85,247,0.2)' };
+    const fgC = { Jillian:'var(--jillian-color)', Michael:'var(--michael-color)', Tiara:'var(--tiara-color)' };
+    chatAv.style.background = bgC[persona] || bgC.Michael;
+    chatAv.style.color = fgC[persona] || fgC.Michael;
+    chatAv.textContent = persona ? persona[0] : 'M';
+  }
+  const discl = document.getElementById('chatDisclaimer');
+  if (discl) discl.style.display = loadData('chatDisclaimerDismissed', false) ? 'none' : 'block';
+}
+function dismissDisclaimer() { saveData('chatDisclaimerDismissed', true); document.getElementById('chatDisclaimer').style.display = 'none'; }
+function newConversation() {
+  if (!confirm('Start a new conversation? Chat history will be cleared.')) return;
+  chatHistory = [{ role: 'coach', text: `Hey! I'm Coach ${settings.persona}. What can I help you with?` }];
+  save(); renderChat();
+}
+function openPersonaSwitcher() {
+  const pp = [
+    { name:'Jillian', emoji:'\uD83D\uDD25', color:'var(--jillian-color)', desc:'Direct & no-nonsense' },
+    { name:'Michael', emoji:'\u2696\uFE0F', color:'var(--michael-color)', desc:'Balanced & real' },
+    { name:'Tiara', emoji:'\uD83D\uDC9C', color:'var(--tiara-color)', desc:'Warm & supportive' },
+  ];
+  document.getElementById('settingsEditTitle').innerHTML = 'Switch Coach <button class="modal-close" onclick="closeModal(\'settingsEditModal\')">&times;</button>';
+  document.getElementById('settingsEditBody').innerHTML = pp.map(p => `
+    <div onclick="switchPersona('${p.name}')" style="padding:14px;background:var(--bg-card);border-radius:var(--radius-sm);border:2px solid ${settings.persona===p.name?p.color:'var(--border)'};cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.3rem;">${p.emoji}</span>
+      <div><div style="font-weight:700;color:${p.color}">${p.name}</div><div style="font-size:0.75rem;color:var(--text-secondary);">${p.desc}</div></div>
+      ${settings.persona===p.name?'<span style="margin-left:auto;color:var(--accent);font-weight:700;">Current</span>':''}
+    </div>`).join('');
+  const sb = document.querySelector('#settingsEditModal .btn-primary'); if (sb) sb.style.display = 'none';
+  document.getElementById('settingsEditModal').classList.add('open');
+}
+function switchPersona(name) {
+  settings.persona = name; save(); closeModal('settingsEditModal');
+  const sb = document.querySelector('#settingsEditModal .btn-primary'); if (sb) sb.style.display = '';
+  chatHistory.push({ role: 'coach', text: `You're now talking to Coach ${name}. How can I help?` });
+  save(); renderChat();
 }
 
 // ============ ACTIONS ============
@@ -2013,13 +2054,15 @@ function handleStapleSelect(val) {
   const s = staples[parseInt(val)];
   if (!s) return;
   const meal = document.getElementById('foodMealType').value;
-  meals.push({
+  const entry = {
     id: Date.now().toString(), date: today(), meal: meal,
     name: s.name, desc: '', cals: s.cals, protein: s.protein, carbs: s.carbs, fat: s.fat
-  });
+  };
+  meals.push(entry);
   save();
   closeModal('foodModal');
   renderAll();
+  generateMealFeedback(entry);
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -2946,7 +2989,7 @@ async function sendMessage() {
   }
 
   chatHistory.push({ role: 'coach', text: finalText });
-  save(); renderAll();
+  save(); renderChat();
 }
 
 function parseActions(text) {
