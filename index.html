@@ -1194,6 +1194,7 @@ let staples = [];
 let chatHistory = [];
 let foodViewDate = today();
 let weightViewDate = today();
+var dailyInsightCache = { date: '', text: '' };
 let workoutViewDate = today();
 let lastKnownDate = today();
 
@@ -1992,34 +1993,40 @@ function showManualEntry() {
 // Robust JSON extractor — handles code fences, thinking tokens, partial JSON, etc.
 function extractFoodJSON(raw, fallbackName) {
   if (!raw) return null;
-  let txt = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-  // 1. Try direct parse first
-  try { const p = JSON.parse(txt); if (p.calories !== undefined) return p; } catch(e) {}
-  // 2. Strip everything outside the first { ... last }
-  const firstBrace = txt.indexOf('{');
-  const lastBrace = txt.lastIndexOf('}');
+  console.log('[FoodParse] Raw length:', raw.length);
+  // Strip ALL backtick sequences and code fence markers
+  var txt = raw;
+  txt = txt.replace(/`/g, '');  // Remove ALL backticks
+  txt = txt.replace(/<think>[\s\S]*?<\/think>/g, '');  // Remove thinking tags
+  txt = txt.replace(/^json\s*/i, '');  // Remove bare "json" prefix left after backtick removal
+  txt = txt.trim();
+  console.log('[FoodParse] Cleaned first 200:', txt.slice(0, 200));
+  // 1. Try direct parse
+  try { var p = JSON.parse(txt); if (p.calories !== undefined) { console.log('[FoodParse] Direct OK'); return p; } } catch(e) {}
+  // 2. Extract { ... }
+  var firstBrace = txt.indexOf('{');
+  var lastBrace = txt.lastIndexOf('}');
   if (firstBrace >= 0 && lastBrace > firstBrace) {
-    const candidate = txt.slice(firstBrace, lastBrace + 1);
-    try { const p = JSON.parse(candidate); if (p.calories !== undefined) return p; } catch(e) {}
-    // 3. Try fixing common issues: trailing commas, single quotes
-    let fixed = candidate.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-    try { const p = JSON.parse(fixed); if (p.calories !== undefined) return p; } catch(e) {}
+    var candidate = txt.slice(firstBrace, lastBrace + 1);
+    console.log('[FoodParse] Candidate:', candidate.slice(0, 300));
+    try { var p2 = JSON.parse(candidate); if (p2.calories !== undefined) { console.log('[FoodParse] Brace OK'); return p2; } } catch(e) { console.log('[FoodParse] Brace fail:', e.message); }
+    var fixed = candidate.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    try { var p3 = JSON.parse(fixed); if (p3.calories !== undefined) { console.log('[FoodParse] Fixed OK'); return p3; } } catch(e) {}
   }
-  // 4. Regex fallback: extract individual values
-  const getNum = (key) => { const m = txt.match(new RegExp('"' + key + '"\\s*:\\s*(\\d+)')); return m ? parseInt(m[1]) : 0; };
-  const getName = () => { const m = txt.match(/"name"\s*:\s*"([^"]+)"/); return m ? m[1] : (fallbackName || 'Meal'); };
-  const getNote = () => { const m = txt.match(/"note"\s*:\s*"([^"]+)"/); return m ? m[1] : ''; };
-  const cals = getNum('calories');
+  // 3. Regex fallback
+  console.log('[FoodParse] Trying regex on full text');
+  var getNum = function(key) { var m = txt.match(new RegExp('"' + key + '"\\s*:\\s*(\\d+\\.?\\d*)')); return m ? Math.round(parseFloat(m[1])) : 0; };
+  var getName = function() { var m = txt.match(/"name"\s*:\s*"([^"]+)"/); return m ? m[1] : (fallbackName || 'Meal'); };
+  var cals = getNum('calories');
   if (cals > 0) {
-    let protein = getNum('protein'), carbs = getNum('carbs'), fat = getNum('fat');
-    // Sanity check: if macros are all 0 but calories exist, estimate a rough split
-    if (protein === 0 && carbs === 0 && fat === 0 && cals > 0) {
-      protein = Math.round(cals * 0.30 / 4);
-      carbs = Math.round(cals * 0.40 / 4);
-      fat = Math.round(cals * 0.30 / 9);
+    var protein = getNum('protein'), carbs = getNum('carbs'), fat = getNum('fat');
+    if (protein === 0 && carbs === 0 && fat === 0) {
+      protein = Math.round(cals * 0.30 / 4); carbs = Math.round(cals * 0.40 / 4); fat = Math.round(cals * 0.30 / 9);
     }
-    return { name: getName(), calories: cals, protein, carbs, fat, note: getNote() || 'Macros estimated — review and adjust.' };
+    console.log('[FoodParse] Regex OK:', cals, protein, carbs, fat);
+    return { name: getName(), calories: cals, protein: protein, carbs: carbs, fat: fat, note: 'AI estimate' };
   }
+  console.error('[FoodParse] FAILED. Full text:', txt);
   return null;
 }
 
@@ -2220,8 +2227,7 @@ function showCoachToast(text) {
   setTimeout(() => { toast.style.transition = 'opacity 0.5s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 6000);
 }
 
-// Daily AI insight for dashboard — cached per day
-let dailyInsightCache = { date: '', text: '' };
+// Daily AI insight for dashboard — cached per day (var for hoisting)
 async function generateDailyInsight(totals, goal, burn, remaining) {
   const apiKey = settings.geminiApiKey;
   if (!apiKey) return;
