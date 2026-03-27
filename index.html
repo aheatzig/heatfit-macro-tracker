@@ -181,6 +181,8 @@
       font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
     }
     .coach-avatar.michael { background: rgba(59,130,246,0.2); color: var(--michael-color); }
+    .coach-avatar.jillian { background: rgba(239,68,68,0.2); color: var(--jillian-color); }
+    .coach-avatar.tiara { background: rgba(168,85,247,0.2); color: var(--tiara-color); }
     .coach-text { font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
     .coach-text strong { color: var(--text-primary); }
     .goal-line-label { font-size: 0.72rem; color: var(--accent); display: flex; align-items: center; gap: 4px; }
@@ -766,7 +768,7 @@
     <div class="card dash-card" onclick="switchScreen('chat')">
       <div class="card-title">Coach Insight <span class="dash-card-hint">Tap to chat →</span></div>
       <div class="coach-insight">
-        <div class="coach-avatar michael">M</div>
+        <div class="coach-avatar" id="dashCoachAvatar">M</div>
         <div>
           <div class="coach-text" id="dashCoachInsight"></div>
         </div>
@@ -901,7 +903,7 @@
       <div class="form-group">
         <label class="form-label">Meal</label>
         <select class="form-select" id="foodMealType" onchange="populateStapleDropdown(this.value)">
-          <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+          <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Miscellaneous</option>
         </select>
       </div>
       <div class="form-group" id="foodStapleGroup">
@@ -1231,7 +1233,15 @@ function setupGoalGetters() {
 }
 
 function save() {
-  saveData('settings', settings);
+  // Extract plain data from settings, skipping getter-only properties (calorieGoal etc.)
+  const plainSettings = {};
+  for (const key of Object.keys(settings)) {
+    const desc = Object.getOwnPropertyDescriptor(settings, key);
+    if (desc && !desc.get) plainSettings[key] = settings[key];
+  }
+  // Always ensure geminiApiKey is preserved
+  if (settings.geminiApiKey) plainSettings.geminiApiKey = settings.geminiApiKey;
+  saveData('settings', plainSettings);
   saveData('meals', meals);
   saveData('weights', weights);
   saveData('workouts', workouts);
@@ -1607,13 +1617,21 @@ function renderDashboard() {
       <button class="btn btn-secondary btn-full btn-sm" onclick="switchScreen('workouts')">Log Workout</button>`;
   }
 
-  // Coach insight
-  const insights = [
+  // Update coach avatar to match persona
+  const persona = settings.persona || 'Michael';
+  const dashAvatar = document.getElementById('dashCoachAvatar');
+  dashAvatar.textContent = persona[0];
+  dashAvatar.className = 'coach-avatar ' + persona.toLowerCase();
+
+  // Coach insight — show static fallback first, then replace with AI if available
+  const fallbackInsights = [
     `<strong>Your deficit is on track.</strong> You've consumed ${t.cals} of ${goal} calories${burn > 0 ? ' (adjusted for your workout)' : ''}. ${remaining > 0 ? `You have ${remaining} left for the day — keep protein high.` : 'You\'ve hit your limit. Stay the course.'}`,
     `<strong>${t.protein}g protein so far.</strong> ${t.protein >= settings.proteinGoal * 0.7 ? 'Great pace on protein today.' : `You need ${settings.proteinGoal - t.protein}g more — prioritize protein at your next meal.`}`,
     burn > 0 ? `<strong>${burn} calories burned today.</strong> Your goal adjusted from ${baseGoal.toLocaleString()} to ${goal.toLocaleString()} kcal — eat back those calories to maintain your deficit, not starve yourself.` : `<strong>Rest day vibes.</strong> No workout logged yet. Your calorie goal stays at ${baseGoal.toLocaleString()} kcal.`
   ];
-  document.getElementById('dashCoachInsight').innerHTML = insights[Math.floor(Date.now()/86400000) % insights.length];
+  document.getElementById('dashCoachInsight').innerHTML = fallbackInsights[Math.floor(Date.now()/86400000) % fallbackInsights.length];
+  // Fire AI insight generation (non-blocking, replaces static text when ready)
+  generateDailyInsight(t, goal, burn, remaining);
 
   drawWeightChart('weightMiniChart', 160);
 }
@@ -1633,30 +1651,8 @@ function renderFoodLog() {
 
   let html = '';
 
-  // Staple meals carousel (only show on today)
-  if (isToday && staples.length > 0) {
-    html += `<div style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="card-title" style="margin-bottom:0;">Saved Meals</div>
-      </div>
-      <div class="staple-grid">`;
-    staples.forEach(function(s, i) {
-      html += `<div class="staple-card" style="position:relative;">
-        <button onclick="event.stopPropagation();deleteStaple(${i})" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;padding:0;line-height:1;" title="Delete">&times;</button>
-        <div class="staple-name">${s.name}</div>
-        <div class="staple-info">${s.cals} kcal · ${s.protein}g P</div>
-        <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">`;
-      var cats = s.categories || ['Breakfast','Lunch','Dinner','Snack'];
-      cats.forEach(function(cat) {
-        html += `<button onclick="event.stopPropagation();quickAddStaple(${i},'${cat}')" style="padding:3px 8px;font-size:0.65rem;font-weight:600;border-radius:12px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">${cat}</button>`;
-      });
-      html += `</div></div>`;
-    });
-    html += `</div></div>`;
-  }
-
   // Meals grouped
-  const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+  const groups = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Miscellaneous'];
   groups.forEach(g => {
     const items = viewMeals.filter(m => m.meal === g);
     const totalCals = items.reduce((s, m) => s + m.cals, 0);
@@ -2036,18 +2032,18 @@ async function estimateMacros() {
   document.getElementById('foodEstimateBtn').disabled = true;
 
   try {
-    const prompt = `Estimate the nutritional macros for this meal. You MUST reply with ONLY a JSON object on a single line, nothing else. No markdown, no code fences, no explanation before or after. Just raw JSON.
+    const prompt = `You are a nutrition calculator. Estimate macros for this meal. Return ONLY valid JSON, no other text.
 
-Format: {"name":"short name","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"note":"one sentence"}
+{"name":"short name","calories":NUMBER,"protein":NUMBER,"carbs":NUMBER,"fat":NUMBER,"note":"one sentence"}
 
-Rules:
-- ALL fields are required. Never omit protein, carbs, or fat.
-- All values must be whole numbers greater than 0 (except fat which can be 0 for very lean meals).
-- protein + carbs + fat should roughly account for the calorie total (protein*4 + carbs*4 + fat*9 ≈ calories).
-- Be conservative and realistic with portion sizes.
+CRITICAL RULES:
+- Every field MUST be a number > 0 (protein, carbs, fat must all be non-zero for any real meal)
+- Verify: protein*4 + carbs*4 + fat*9 should approximately equal calories (within 10%)
+- If the math doesn't check out, adjust the macros until it does
+- Be conservative with portions. Round to whole numbers.
 
 Meal: ${desc || 'See the attached photo'}
-Context: Daily targets are ${settings.calorieGoal} cal, ${settings.proteinGoal}g protein.`;
+Targets: ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein/day.`;
 
     const contents = [{ role: 'user', parts: [] }];
     if (hasPhoto) {
@@ -2064,7 +2060,7 @@ Context: Daily targets are ${settings.calorieGoal} cal, ${settings.proteinGoal}g
     let result = null;
     // Try 2.5-flash first (different rate pool), fall back to 2.0-flash
     const foodModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-    const genConfig = { maxOutputTokens: 1024, temperature: 0.2 };
+    const genConfig = { maxOutputTokens: 256, temperature: 0.1, responseMimeType: 'application/json' };
 
     for (const model of foodModels) {
       console.log('[Food AI] Trying model:', model);
@@ -2151,9 +2147,97 @@ function confirmFood() {
   meals.push(entry);
   if (document.getElementById('foodSaveStaple').checked && entry.cals > 0) {
     const cats = [...document.querySelectorAll('.staple-cat-check:checked')].map(c => c.value);
-    staples.push({ name: entry.name, cals: entry.cals, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, categories: cats.length ? cats : ['Breakfast','Lunch','Dinner','Snack'] });
+    staples.push({ name: entry.name, cals: entry.cals, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, categories: cats.length ? cats : ['Breakfast','Lunch','Dinner','Snack','Miscellaneous'] });
   }
   save(); closeModal('foodModal'); resetFoodModal(); renderAll();
+  // AI coach feedback on meal log (non-blocking)
+  generateMealFeedback(entry);
+}
+
+async function generateMealFeedback(entry) {
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) return;
+  const todayMeals = meals.filter(m => m.date === today());
+  const totalCals = todayMeals.reduce((s, m) => s + m.cals, 0);
+  const totalProtein = todayMeals.reduce((s, m) => s + m.protein, 0);
+  const goal = settings.calorieGoal;
+  const remaining = goal - totalCals;
+  try {
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `You are Coach ${settings.persona || 'Michael'}, a fitness nutrition coach. Style: ${settings.persona === 'Jillian' ? 'direct, tough-love, data-driven' : settings.persona === 'Tiara' ? 'warm, supportive, encouraging' : 'balanced, practical, grounded'}. Response length: ${settings.responseLength || 'Medium'}. Emoji use: ${settings.emojiUse || 'A Few'}.
+
+Give a 1-2 sentence reaction to this meal that was just logged:
+- Meal: ${entry.name} (${entry.meal})
+- Macros: ${entry.cals} cal, ${entry.protein}g P, ${entry.carbs}g C, ${entry.fat}g F
+- Today's total so far: ${totalCals} cal consumed, ${totalProtein}g protein
+- Daily goal: ${goal} cal, ${settings.proteinGoal}g protein
+- Remaining: ${remaining} cal
+
+Be specific about the numbers. Keep it to 1-2 sentences max.` }] }],
+        generationConfig: { maxOutputTokens: 150, temperature: 0.7 }
+      })
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      // Show as a toast/notification briefly
+      showCoachToast(text);
+    }
+  } catch(e) { console.log('[Meal Feedback] Error:', e); }
+}
+
+function showCoachToast(text) {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:70px;left:16px;right:16px;max-width:448px;margin:0 auto;background:var(--bg-card);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:14px 16px;z-index:300;animation:fadeIn 0.3s ease;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+  const persona = settings.persona || 'Michael';
+  const color = persona === 'Jillian' ? 'var(--jillian-color)' : persona === 'Tiara' ? 'var(--tiara-color)' : 'var(--michael-color)';
+  toast.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:32px;height:32px;border-radius:50%;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;flex-shrink:0;">${persona[0]}</div><div style="flex:1;font-size:0.85rem;line-height:1.5;color:var(--text-secondary);">${text}</div></div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.transition = 'opacity 0.5s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 6000);
+}
+
+// Daily AI insight for dashboard — cached per day
+let dailyInsightCache = { date: '', text: '' };
+async function generateDailyInsight(totals, goal, burn, remaining) {
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) return;
+  // Cache: only regenerate once per day or if data changed significantly
+  const cacheKey = today() + '_' + totals.cals;
+  if (dailyInsightCache.date === cacheKey && dailyInsightCache.text) {
+    document.getElementById('dashCoachInsight').innerHTML = dailyInsightCache.text;
+    return;
+  }
+  try {
+    const recentWeights = weights.slice(-7).map(w => `${w.date}: ${w.weight}`).join(', ');
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `You are Coach ${settings.persona || 'Michael'}. Style: ${settings.persona === 'Jillian' ? 'direct, tough-love' : settings.persona === 'Tiara' ? 'warm, supportive' : 'balanced, practical'}. Emoji: ${settings.emojiUse || 'A Few'}.
+
+Generate a 2-3 sentence daily coaching insight for the dashboard based on this data:
+- Today's intake: ${totals.cals} cal, ${totals.protein}g P, ${totals.carbs}g C, ${totals.fat}g F
+- Daily goal: ${goal} cal, ${settings.proteinGoal}g protein
+- Remaining: ${remaining} cal
+- Calories burned today: ${burn}
+- Recent weight trend (last 7 days): ${recentWeights || 'no data yet'}
+- Goal: ${settings.primaryGoal || 'Lose Weight'} at ${settings.targetRate || '1.0'} lbs/week
+- Goal weight: ${settings.goalWeight || 'not set'}
+
+Focus on what's actionable for the rest of the day. Be specific with numbers. 2-3 sentences max.` }] }],
+        generationConfig: { maxOutputTokens: 200, temperature: 0.7 }
+      })
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      dailyInsightCache = { date: cacheKey, text };
+      document.getElementById('dashCoachInsight').innerHTML = text;
+    }
+  } catch(e) { console.log('[Daily Insight] Error:', e); }
 }
 
 function deleteFood(id) {
@@ -2218,6 +2302,38 @@ function logWeight() {
   console.log('[Weight] All weights:', JSON.stringify(weights));
   save();
   renderAll();
+  // AI coach feedback on weight log (non-blocking)
+  generateWeightFeedback(w, targetDate);
+}
+
+async function generateWeightFeedback(newWeight, date) {
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) return;
+  const recent = weights.slice(-14).map(w => `${w.date}: ${w.weight} lbs`).join(', ');
+  const goal = settings.goalWeight;
+  const start = settings.startWeight;
+  try {
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `You are Coach ${settings.persona || 'Michael'}, a fitness coach. Style: ${settings.persona === 'Jillian' ? 'direct, tough-love' : settings.persona === 'Tiara' ? 'warm, supportive' : 'balanced, practical'}. Emoji use: ${settings.emojiUse || 'A Few'}.
+
+Give a 1-2 sentence reaction to this weight log:
+- Today's weight: ${newWeight} lbs (logged for ${date})
+- Recent entries (last 14 days): ${recent}
+- Starting weight: ${start || 'unknown'} lbs
+- Goal weight: ${goal || 'not set'} lbs
+- Primary goal: ${settings.primaryGoal || 'Lose Weight'}
+
+Comment on the trend, not the daily number. Be encouraging but honest. 1-2 sentences max.` }] }],
+        generationConfig: { maxOutputTokens: 150, temperature: 0.7 }
+      })
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) showCoachToast(text);
+  } catch(e) { console.log('[Weight Feedback] Error:', e); }
 }
 
 function editWeightEntry(date) {
@@ -2286,6 +2402,37 @@ function saveWorkout() {
   };
   workouts.push(entry);
   save(); closeModal('workoutModal'); renderAll();
+  // AI coach feedback on workout (non-blocking)
+  generateWorkoutFeedback(entry);
+}
+
+async function generateWorkoutFeedback(entry) {
+  const apiKey = settings.geminiApiKey;
+  if (!apiKey) return;
+  const todayMeals = meals.filter(m => m.date === today());
+  const totalCals = todayMeals.reduce((s, m) => s + m.cals, 0);
+  try {
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `You are Coach ${settings.persona || 'Michael'}, a fitness coach. Style: ${settings.persona === 'Jillian' ? 'direct, tough-love' : settings.persona === 'Tiara' ? 'warm, supportive' : 'balanced, practical'}. Emoji use: ${settings.emojiUse || 'A Few'}.
+
+React to this workout just logged:
+- Type: ${entry.type}, Duration: ${entry.duration} min, Effort: ${entry.effort}
+- Estimated burn: ${entry.calsBurned} cal
+- Distance: ${entry.distance || 'n/a'}
+- Calories consumed today: ${totalCals} cal, Goal: ${settings.calorieGoal} cal
+- Calorie budget now adjusted by +${entry.calsBurned} cal
+
+Give 1-2 sentences. Comment on the workout and how it affects today's nutrition budget.` }] }],
+        generationConfig: { maxOutputTokens: 150, temperature: 0.7 }
+      })
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) showCoachToast(text);
+  } catch(e) { console.log('[Workout Feedback] Error:', e); }
 }
 
 // Settings edit
