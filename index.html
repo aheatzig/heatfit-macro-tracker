@@ -803,13 +803,17 @@
   <!-- CHAT -->
   <section id="screen-chat" class="screen">
     <div class="chat-container">
-      <div class="chat-header-info">
-        <div class="coach-avatar michael">M</div>
-        <div>
-          <div class="chat-persona-name" id="chatCoachName">Coach Michael</div>
-          <div class="chat-persona-desc" id="chatCoachDesc">Balanced, real, and grounded</div>
+      <div class="chat-header-info" style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openPersonaSwitcher()">
+          <div class="coach-avatar" id="chatCoachAvatar" style="width:40px;height:40px;">M</div>
+          <div>
+            <div class="chat-persona-name" id="chatCoachName">Coach Michael</div>
+            <div class="chat-persona-desc" id="chatCoachDesc">Tap to switch coach</div>
+          </div>
         </div>
+        <button class="btn btn-secondary btn-sm" onclick="newConversation()" style="padding:6px 10px;font-size:0.72rem;">New Chat</button>
       </div>
+      <div id="chatDisclaimer" style="display:none;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:8px;font-size:0.72rem;color:var(--text-muted);line-height:1.5;text-align:center;">HeatFit's AI coach is not a medical professional. Always consult a doctor before making significant changes to your diet or exercise. <button onclick="dismissDisclaimer()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:inherit;font-size:0.72rem;font-weight:600;margin-left:4px;">Got it</button></div>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-photo-preview" id="chatPhotoPreview">
         <img class="chat-photo-thumb" id="chatPhotoThumb" src="" alt="preview" />
@@ -853,7 +857,13 @@
         <div class="card-title" style="margin-bottom:0;">Weight History</div>
         <div class="goal-line-label" id="weightGoalLabel"></div>
       </div>
-      <div class="chart-canvas-wrap" style="height:200px;margin-top:12px;"><canvas id="weightChart"></canvas></div>
+      <div class="time-tabs" id="weightTimeTabs">
+        <button class="time-tab" onclick="setWeightRange('1W')">1W</button>
+        <button class="time-tab active" onclick="setWeightRange('1M')">1M</button>
+        <button class="time-tab" onclick="setWeightRange('3M')">3M</button>
+        <button class="time-tab" onclick="setWeightRange('All')">All</button>
+      </div>
+      <div class="chart-canvas-wrap" style="height:220px;"><canvas id="weightChart"></canvas></div>
     </div>
     <div class="card" id="weightStats"></div>
     <div id="weightEntries"></div>
@@ -1027,6 +1037,10 @@
 <script>
 // ============ AUTH & DATA LAYER ============
 const GOOGLE_CLIENT_ID = '846564297266-h0gv48r4s5epv1d5hb4k55isoomg4u0s.apps.googleusercontent.com';
+const STRAVA_CLIENT_ID = '141498';
+const STRAVA_BACKEND_URL = 'https://heatfit-strava-backend.vercel.app';
+const STRAVA_REDIRECT_URI = 'https://aheatzig.github.io/heatfit-macro-tracker/';
+const STRAVA_SCOPE = 'read,activity:read_all';
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Current user session (not namespaced)
@@ -1295,12 +1309,14 @@ function obToggleRate() {
   document.getElementById('obRateSection').style.display = goal === 'Maintain Weight' ? 'none' : 'block';
 }
 
+function initiateStravaOAuth(context) {
+  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  sessionStorage.setItem('strava_oauth_state', state);
+  sessionStorage.setItem('strava_oauth_context', context || 'settings');
+  window.location.href = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT_URI)}&response_type=code&scope=${STRAVA_SCOPE}&state=${state}&approval_prompt=auto`;
+}
 function obConnectStrava() {
-  const mock = confirm('This will redirect to Strava to authorize HeatFit.\n\n(In production, this opens Strava OAuth. For now, click OK to simulate connecting.)');
-  if (mock) {
-    document.getElementById('obStrava').value = 'true';
-    obNext();
-  }
+  initiateStravaOAuth('onboarding');
 }
 
 function obValidateStep(step) {
@@ -1471,6 +1487,8 @@ function showApp() {
   workoutViewDate = today();
   lastKnownDate = today();
   renderAll();
+  // Auto-sync Strava in background
+  if (settings.stravaConnected) { syncStravaActivities().catch(function(e) { console.log('[Strava] Auto-sync error:', e); }); }
 }
 
 function boot() {
@@ -1488,8 +1506,49 @@ function boot() {
   }
 }
 
+// ============ STRAVA OAUTH CALLBACK ============
+async function handleStravaCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code) return false;
+  // Validate state
+  const savedState = sessionStorage.getItem('strava_oauth_state');
+  if (state !== savedState) { console.error('[Strava] State mismatch'); return false; }
+  sessionStorage.removeItem('strava_oauth_state');
+  const context = sessionStorage.getItem('strava_oauth_context') || 'settings';
+  sessionStorage.removeItem('strava_oauth_context');
+  // Clean URL
+  history.replaceState(null, '', window.location.pathname);
+  // Exchange code for tokens
+  try {
+    const resp = await fetch(STRAVA_BACKEND_URL + '/api/strava-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code }) });
+    if (!resp.ok) { console.error('[Strava] Token exchange failed:', resp.status); showCoachToast('Failed to connect Strava. Please try again.'); return false; }
+    const data = await resp.json();
+    saveStravaTokens({ access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at, athlete_id: data.athlete ? data.athlete.id : null });
+    settings.stravaConnected = true;
+    if (currentUser) localStorage.setItem('hf_' + currentUser.id + '_stravaAuthed', '1');
+    save();
+    if (context === 'onboarding') {
+      var obEl = document.getElementById('obStrava');
+      if (obEl) obEl.value = 'true';
+    }
+    // Trigger initial sync in background
+    setTimeout(function() { syncStravaActivities(); }, 1000);
+    showCoachToast('Strava connected successfully! Syncing workouts...');
+    return true;
+  } catch(e) { console.error('[Strava] Callback error:', e); showCoachToast('Failed to connect Strava. Please try again.'); return false; }
+}
+
 // Start the app
-boot();
+(async function() {
+  // Check for Strava OAuth callback before boot
+  if (currentUser && window.location.search.includes('code=')) {
+    loadAllUserData();
+    await handleStravaCallback();
+  }
+  boot();
+})();
 
 // ============ HELPERS ============
 function todayMeals() { return meals.filter(m => m.date === today()); }
@@ -1747,7 +1806,15 @@ function renderWeightScreen() {
   entriesHtml += '</div>';
   document.getElementById('weightEntries').innerHTML = entriesHtml;
 
-  drawWeightChart('weightChart', 200);
+  drawWeightChart('weightChart', 220, weightChartRange);
+}
+
+let weightChartRange = '1M';
+function setWeightRange(range) {
+  weightChartRange = range;
+  document.querySelectorAll('#weightTimeTabs .time-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`#weightTimeTabs .time-tab[onclick*="${range}"]`).classList.add('active');
+  drawWeightChart('weightChart', 220, range);
 }
 
 function renderWorkouts() {
@@ -2079,8 +2146,8 @@ Targets: ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein/day.`
     document.getElementById('foodEstimateStatus').textContent = 'Analyzing your meal...';
     let result = null;
     // Try 2.5-flash first (different rate pool), fall back to 2.0-flash
-    const foodModels = ['gemini-2.0-flash', 'gemini-2.5-flash'];
-    const genConfig = { maxOutputTokens: 512, temperature: 0.1, responseMimeType: 'application/json' };
+    const foodModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const genConfig = { maxOutputTokens: 2048, temperature: 0.1 };
 
     for (const model of foodModels) {
       console.log('[Food AI] Trying model:', model);
@@ -2570,14 +2637,49 @@ function toggleManualMacros() {
 function toggleStrava() {
   if (settings.stravaConnected) {
     if (confirm('Disconnect Strava? Workout auto-sync will stop.')) {
-      settings.stravaConnected = false; localStorage.removeItem('hf_stravaAuthed'); save(); renderAll();
+      settings.stravaConnected = false;
+      if (currentUser) { localStorage.removeItem('hf_' + currentUser.id + '_stravaTokens'); localStorage.removeItem('hf_' + currentUser.id + '_stravaLastSync'); localStorage.removeItem('hf_' + currentUser.id + '_stravaAuthed'); }
+      save(); renderAll();
     }
-  } else {
-    // In production this would redirect to Strava OAuth
-    // For now simulate the connection flow
-    const mock = confirm('This will redirect to Strava to authorize HeatFit.\n\n(In production, this opens Strava OAuth. For now, click OK to simulate connecting.)');
-    if (mock) { settings.stravaConnected = true; localStorage.setItem('hf_stravaAuthed','1'); save(); renderAll(); }
+  } else { initiateStravaOAuth('settings'); }
+}
+// ============ STRAVA TOKEN MANAGEMENT ============
+function getStravaTokens() { if (!currentUser) return null; try { return JSON.parse(localStorage.getItem('hf_' + currentUser.id + '_stravaTokens')); } catch { return null; } }
+function saveStravaTokens(tokens) { if (!currentUser) return; localStorage.setItem('hf_' + currentUser.id + '_stravaTokens', JSON.stringify(tokens)); }
+async function ensureValidStravaToken() {
+  const tokens = getStravaTokens(); if (!tokens) return null;
+  if (tokens.expires_at * 1000 < Date.now() + 300000) {
+    try {
+      const resp = await fetch(STRAVA_BACKEND_URL + '/api/strava-refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: tokens.refresh_token }) });
+      if (!resp.ok) { if (resp.status === 401) { settings.stravaConnected = false; save(); renderAll(); showCoachToast('Strava connection expired. Reconnect in Settings.'); } return null; }
+      const data = await resp.json(); const updated = { ...tokens, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at }; saveStravaTokens(updated); return updated.access_token;
+    } catch(e) { return null; }
   }
+  return tokens.access_token;
+}
+// ============ STRAVA ACTIVITY SYNC ============
+function mapStravaType(t) { return { Run:'Running', Ride:'Cycling', VirtualRide:'Cycling', Swim:'Swimming', WeightTraining:'Weight Training', Hike:'Walking', Walk:'Walking', Yoga:'Yoga', CrossFit:'HIIT', Workout:'HIIT' }[t] || 'Other'; }
+function mapStravaEffort(a) {
+  if (a.average_heartrate) { if (a.average_heartrate < 120) return 'Easy'; if (a.average_heartrate < 150) return 'Moderate'; if (a.average_heartrate < 170) return 'Hard'; return 'Max'; }
+  if (a.suffer_score) { if (a.suffer_score < 25) return 'Easy'; if (a.suffer_score < 75) return 'Moderate'; if (a.suffer_score < 150) return 'Hard'; return 'Max'; }
+  return 'Moderate';
+}
+async function syncStravaActivities() {
+  var token = await ensureValidStravaToken(); if (!token) return;
+  var lastSync = loadData('stravaLastSync', 0);
+  var after = lastSync || Math.floor((Date.now() - 30 * 86400000) / 1000);
+  try {
+    var resp = await fetch('https://www.strava.com/api/v3/athlete/activities?after=' + after + '&per_page=50', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!resp.ok) { if (resp.status === 429) showCoachToast('Strava rate limited. Try again later.'); return; }
+    var activities = await resp.json(); var added = 0;
+    activities.forEach(function(a) {
+      if (workouts.some(function(w) { return w.stravaId === a.id; })) return;
+      var type = mapStravaType(a.type || a.sport_type); var duration = Math.round((a.moving_time || 0) / 60); var distance = a.distance ? (a.distance * 0.000621371).toFixed(1) : '';
+      workouts.push({ id: 'strava_' + a.id, date: (a.start_date_local || a.start_date || '').slice(0, 10), type: type, duration: duration, distance: distance, effort: mapStravaEffort(a), notes: a.name || '', calsBurned: a.kilojoules ? Math.round(a.kilojoules / 4.184) : estimateCalBurn(type, duration, mapStravaEffort(a)), source: 'strava', stravaId: a.id });
+      added++;
+    });
+    if (added > 0) { workouts.sort(function(a, b) { return a.date.localeCompare(b.date); }); saveData('stravaLastSync', Math.floor(Date.now() / 1000)); save(); renderAll(); showCoachToast('Synced ' + added + ' workout' + (added > 1 ? 's' : '') + ' from Strava!'); }
+  } catch(e) { console.error('[Strava] Sync error:', e); }
 }
 
 // API Key
@@ -2907,7 +3009,7 @@ function executeActions(actions) {
 document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
 // Weight chart
-function drawWeightChart(canvasId, height) {
+function drawWeightChart(canvasId, height, range) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || !canvas.parentElement) return;
   const ctx = canvas.getContext('2d');
@@ -2923,7 +3025,12 @@ function drawWeightChart(canvasId, height) {
   const pad = { top: 20, right: 10, bottom: 38, left: 40 };
   const cWidth = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
 
-  const entries = weights.slice(-28);
+  // Slice data by range
+  const rangeDays = { '1W': 7, '1M': 28, '3M': 90, 'All': 99999 };
+  const days = rangeDays[range] || 28;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  const entries = (range === 'All' || !range) ? weights.slice(-28) : weights.filter(e => e.date >= cutoffStr);
   const data = entries.map(e => e.weight);
   const dates = entries.map(e => e.date);
   if (!data.length) {
@@ -2969,6 +3076,21 @@ function drawWeightChart(canvasId, height) {
   ctx.strokeStyle = '#f5f5f5'; ctx.lineWidth = 2; ctx.beginPath();
   data.forEach((v, i) => { const x = pad.left + i * xStep; i === 0 ? ctx.moveTo(x, yScale(v)) : ctx.lineTo(x, yScale(v)); });
   ctx.stroke();
+
+  // 7-day moving average trend line
+  if (data.length >= 3) {
+    const windowSize = Math.min(7, data.length);
+    const trend = data.map((_, i) => {
+      const start = Math.max(0, i - windowSize + 1);
+      const slice = data.slice(start, i + 1);
+      return slice.reduce((a, b) => a + b, 0) / slice.length;
+    });
+    ctx.strokeStyle = 'rgba(245,158,11,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    trend.forEach((v, i) => { const x = pad.left + i * xStep; i === 0 ? ctx.moveTo(x, yScale(v)) : ctx.lineTo(x, yScale(v)); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   // Fill
   const grad = ctx.createLinearGradient(0, pad.top, 0, h);
@@ -3068,7 +3190,7 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 });
 
 // Resize handler (only when app is visible)
-window.addEventListener('resize', () => { if (currentUser && loadData('onboarded', false)) { drawWeightChart('weightMiniChart', 160); drawWeightChart('weightChart', 200); } });
+window.addEventListener('resize', () => { if (currentUser && loadData('onboarded', false)) { drawWeightChart('weightMiniChart', 160, '1M'); drawWeightChart('weightChart', 220, weightChartRange); } });
 </script>
 </body>
 </html>
