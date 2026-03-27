@@ -2062,7 +2062,7 @@ Targets: ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein/day.`
     let result = null;
     // Try 2.5-flash first (different rate pool), fall back to 2.0-flash
     const foodModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-    const genConfig = { maxOutputTokens: 256, temperature: 0.1, responseMimeType: 'application/json' };
+    const genConfig = { maxOutputTokens: 512, temperature: 0.1 };
 
     for (const model of foodModels) {
       console.log('[Food AI] Trying model:', model);
@@ -2088,7 +2088,8 @@ Targets: ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein/day.`
             });
             if (resp.ok) {
               var d = await resp.json();
-              result = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
+              var rp = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
+              if (rp && rp.length) { for (var rpi = rp.length - 1; rpi >= 0; rpi--) { if (rp[rpi].text) { result = rp[rpi].text; break; } } }
               if (result) break;
             }
           } catch(e) {}
@@ -2099,8 +2100,15 @@ Targets: ${settings.calorieGoal} cal/day, ${settings.proteinGoal}g protein/day.`
       if (!resp.ok) { console.log('[Food AI]', model, 'error:', resp.status); continue; }
       try {
         var data = await resp.json();
-        result = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-        if (result) { console.log('[Food AI] Success with', model); break; }
+        // For thinking models (2.5-flash), the actual response is in the LAST text part
+        var parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+        if (parts && parts.length) {
+          // Find the last part with text (skip thinking parts)
+          for (var pi = parts.length - 1; pi >= 0; pi--) {
+            if (parts[pi].text) { result = parts[pi].text; break; }
+          }
+        }
+        if (result) { console.log('[Food AI] Success with', model, '- parts count:', parts.length); break; }
       } catch(e) { console.error('[Food AI] Parse error:', e); continue; }
     }
 
