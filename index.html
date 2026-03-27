@@ -1706,15 +1706,17 @@ function renderWeightScreen() {
   document.getElementById('weightGoalLabel').textContent = `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}`;
 
   // Stats
+  const cw = weights.length ? weights[weights.length-1].weight : (settings.startWeight || 0);
   const rate = weights.length > 7 ? ((cw - weights[weights.length - 7].weight) / 1).toFixed(1) : '--';
-  const daysToGoal = rate < 0 ? Math.ceil((cw - gw) / Math.abs(rate) * 7) : '--';
-  const goalDate = typeof daysToGoal === 'number' ? new Date(Date.now() + daysToGoal * 86400000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '--';
+  const daysToGoal = parseFloat(rate) < 0 ? Math.ceil((cw - gw) / Math.abs(parseFloat(rate)) * 7) : '--';
+  const goalDate = typeof daysToGoal === 'number' && daysToGoal > 0 ? new Date(Date.now() + daysToGoal * 86400000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '--';
+  const unitLabel = settings.units === 'imperial' ? 'lbs' : 'kg';
   document.getElementById('weightStats').innerHTML = `
     <div class="card-title">Stats</div>
-    <div class="stat-row"><span class="stat-label">Starting Weight</span><span class="stat-value">${sw} lbs</span></div>
-    <div class="stat-row"><span class="stat-label">Current Weight</span><span class="stat-value">${cw} lbs</span></div>
-    <div class="stat-row"><span class="stat-label">Goal Weight</span><span class="stat-value" style="color:var(--accent)">${gw} lbs</span></div>
-    <div class="stat-row"><span class="stat-label">Rate</span><span class="stat-value" style="color:${parseFloat(rate)<=0?'var(--success)':'var(--danger)'}">${rate} lbs/week</span></div>
+    <div class="stat-row"><span class="stat-label">Starting Weight</span><span class="stat-value">${sw} ${unitLabel}</span></div>
+    <div class="stat-row"><span class="stat-label">Current Weight</span><span class="stat-value">${cw} ${unitLabel}</span></div>
+    <div class="stat-row"><span class="stat-label">Goal Weight</span><span class="stat-value" style="color:var(--accent)">${gw} ${unitLabel}</span></div>
+    <div class="stat-row"><span class="stat-label">Rate</span><span class="stat-value" style="color:${parseFloat(rate)<=0?'var(--success)':'var(--danger)'}">${rate} ${unitLabel}/week</span></div>
     <div class="stat-row"><span class="stat-label">Est. Goal Date</span><span class="stat-value">${goalDate}</span></div>`;
 
   // Recent entries with edit/delete
