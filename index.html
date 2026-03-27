@@ -1174,6 +1174,31 @@ let staples = [];
 let chatHistory = [];
 let foodViewDate = today();
 let weightViewDate = today();
+let lastKnownDate = today();
+
+// Detect date change (midnight crossing, returning to app next day, etc.)
+function checkDateChange() {
+  const now = today();
+  if (now !== lastKnownDate) {
+    lastKnownDate = now;
+    // Reset view dates to today if they were pointing at the old "today"
+    const yesterday = lastKnownDate; // the old date
+    if (foodViewDate < now) foodViewDate = now;
+    if (weightViewDate < now) weightViewDate = now;
+    // Re-render if app is visible
+    if (currentUser && loadData('onboarded', false)) {
+      renderAll();
+    }
+  }
+}
+
+// Check on visibility change (user returns to app/tab)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkDateChange();
+});
+
+// Periodic check every 60 seconds (catches midnight while app is in foreground)
+setInterval(checkDateChange, 60000);
 
 function loadAllUserData() {
   loadUserData(); // settings
@@ -1409,6 +1434,10 @@ function showApp() {
   document.querySelector('.header').style.display = '';
   document.querySelector('.main').style.display = '';
   document.querySelector('.bottom-nav').style.display = '';
+  // Always reset view dates to today when entering the app
+  foodViewDate = today();
+  weightViewDate = today();
+  lastKnownDate = today();
   renderAll();
 }
 
@@ -1470,6 +1499,8 @@ function switchScreen(name) {
 
 // ============ RENDER ============
 function renderAll() {
+  // Ensure date is current before rendering
+  lastKnownDate = today();
   try { renderDashboard(); } catch(e) { console.error('[Render] Dashboard crash:', e); }
   try { renderFoodLog(); } catch(e) { console.error('[Render] FoodLog crash:', e); }
   try { renderWeightScreen(); } catch(e) { console.error('[Render] Weight crash:', e); }
