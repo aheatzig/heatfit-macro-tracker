@@ -396,6 +396,9 @@
     .ob-error { color:var(--danger); font-size:0.78rem; margin-top:4px; display:none; }
     .ob-error.visible { display:block; }
     .ob-skip { background:none; border:none; color:var(--text-muted); font-family:inherit; font-size:0.85rem; cursor:pointer; padding:12px; text-align:center; width:100%; text-decoration:underline; }
+    @keyframes confirmPop { 0% { transform:scale(0); opacity:0; } 50% { transform:scale(1.2); } 100% { transform:scale(1); opacity:1; } }
+    .save-confirm { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:400; width:80px; height:80px; border-radius:50%; background:var(--success); display:flex; align-items:center; justify-content:center; animation:confirmPop 0.4s ease; box-shadow:0 8px 32px rgba(34,197,94,0.4); }
+    .save-confirm svg { width:40px; height:40px; color:white; }
   </style>
 </head>
 <body>
@@ -1678,7 +1681,9 @@ function renderDashboard() {
   document.getElementById('dashWeightCurrent').innerHTML = `${cw} <span style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">${settings.units==='imperial'?'lbs':'kg'}</span>`;
   document.getElementById('dashWeightChange').innerHTML = weekAgo !== null ? `<span class="chip ${parseFloat(weekAgo)<=0?'chip-success':'chip-danger'}">${weekAgo>0?'+':''}${weekAgo} lbs this week</span>` : '';
   document.getElementById('dashGoalLabel').textContent = settings.goalWeight ? `Goal: ${gw} ${settings.units==='imperial'?'lbs':'kg'}` : 'No goal set';
-  document.getElementById('dashGoalDist').textContent = (dist !== '--') ? `${dist} ${settings.units==='imperial'?'lbs':'kg'} to go` : '';
+  const dashRate = weights.length > 7 ? (cw - weights[weights.length-7].weight) : null;
+  const dashEta = (dashRate && dashRate < 0 && settings.goalWeight) ? new Date(Date.now() + Math.ceil((cw - gw) / Math.abs(dashRate) * 7) * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  document.getElementById('dashGoalDist').textContent = (dist !== '--') ? `${dist} ${settings.units==='imperial'?'lbs':'kg'} to go${dashEta ? ' · ~' + dashEta : ''}` : '';
 
   // Today workout
   const tw = todayWorkouts();
@@ -2073,6 +2078,11 @@ function renderSettings() {
       <div class="settings-row" onclick="editSetting('emojiUse')"><span class="settings-row-label">Emoji Use</span><span class="settings-row-value">${s.emojiUse}</span></div>
     </div>
     <div class="settings-section">
+      <div class="settings-label">Saved Meals (${staples.length})</div>
+      ${staples.length === 0 ? '<div style="font-size:0.82rem;color:var(--text-muted);padding:10px 0;">No saved meals yet. Save a meal when logging food.</div>' :
+        staples.map((st, i) => `<div class="settings-row" onclick="editStaple(${i})"><span class="settings-row-label">${st.name}</span><span class="settings-row-value">${st.cals} cal · ${st.protein}g P</span></div>`).join('')}
+    </div>
+    <div class="settings-section">
       <div class="settings-label">Integrations</div>
       <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -2434,8 +2444,7 @@ function confirmFood() {
     const cats = [...document.querySelectorAll('.staple-cat-check:checked')].map(c => c.value);
     staples.push({ name: entry.name, cals: entry.cals, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, categories: cats.length ? cats : ['Breakfast','Lunch','Dinner','Snack','Miscellaneous'] });
   }
-  save(); closeModal('foodModal'); resetFoodModal(); renderAll();
-  // AI coach feedback on meal log (non-blocking)
+  save(); closeModal('foodModal'); resetFoodModal(); showSaveConfirm(); renderAll();
   generateMealFeedback(entry);
 }
 
@@ -2472,6 +2481,14 @@ Be specific about the numbers. Keep it to 1-2 sentences max.` }] }],
       showCoachToast(text);
     }
   } catch(e) { console.log('[Meal Feedback] Error:', e); }
+}
+
+function showSaveConfirm() {
+  const el = document.createElement('div');
+  el.className = 'save-confirm';
+  el.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 800);
 }
 
 function showCoachToast(text) {
@@ -2553,10 +2570,29 @@ function addStapleByName(name, mealCategory) {
   });
   save(); renderAll();
 }
-function deleteStaple(i) {
-  if (!confirm('Delete staple "' + staples[i].name + '"?')) return;
-  staples.splice(i, 1);
-  save(); renderAll();
+
+function editStaple(i) {
+  const s = staples[i];
+  if (!s) return;
+  document.getElementById('settingsEditTitle').innerHTML = 'Edit Staple <button class="modal-close" onclick="closeModal(\'settingsEditModal\')">&times;</button>';
+  const cats = s.categories || ['Breakfast','Lunch','Dinner','Snack'];
+  document.getElementById('settingsEditBody').innerHTML = `
+    <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="editStapleName" value="${s.name}" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Calories</label><input type="number" class="form-input" id="editStapleCals" value="${s.cals}" /></div>
+      <div class="form-group"><label class="form-label">Protein (g)</label><input type="number" class="form-input" id="editStapleProtein" value="${s.protein}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Carbs (g)</label><input type="number" class="form-input" id="editStapleCarbs" value="${s.carbs}" /></div>
+      <div class="form-group"><label class="form-label">Fat (g)</label><input type="number" class="form-input" id="editStapleFat" value="${s.fat}" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">Available for</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${['Breakfast','Lunch','Dinner','Snack'].map(c => `<label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer;"><input type="checkbox" class="edit-staple-cat" value="${c}" ${cats.includes(c)?'checked':''} style="accent-color:var(--accent);width:16px;height:16px;" /> ${c}</label>`).join('')}
+      </div>
+    </div>`;
+  currentEditField = '__staple__' + i;
+  document.getElementById('settingsEditModal').classList.add('open');
 }
 
 function guessNextMeal() {
@@ -2585,8 +2621,7 @@ function logWeight() {
   }
   console.log('[Weight] All weights:', JSON.stringify(weights));
   save();
-  renderAll();
-  // AI coach feedback on weight log (non-blocking)
+  showSaveConfirm(); renderAll();
   generateWeightFeedback(w, targetDate);
 }
 
@@ -2797,6 +2832,18 @@ function saveSettingsEdit() {
     if (idx >= 0) {
       weights[idx].weight = parseFloat(document.getElementById('editWeightVal').value);
       weights[idx].note = document.getElementById('editWeightNote').value;
+    }
+    save(); closeModal('settingsEditModal'); renderAll(); return;
+  }
+  if (currentEditField.startsWith('__staple__')) {
+    const idx = parseInt(currentEditField.replace('__staple__', ''));
+    if (staples[idx]) {
+      staples[idx].name = document.getElementById('editStapleName').value || staples[idx].name;
+      staples[idx].cals = parseInt(document.getElementById('editStapleCals').value) || 0;
+      staples[idx].protein = parseInt(document.getElementById('editStapleProtein').value) || 0;
+      staples[idx].carbs = parseInt(document.getElementById('editStapleCarbs').value) || 0;
+      staples[idx].fat = parseInt(document.getElementById('editStapleFat').value) || 0;
+      staples[idx].categories = [...document.querySelectorAll('.edit-staple-cat:checked')].map(c => c.value);
     }
     save(); closeModal('settingsEditModal'); renderAll(); return;
   }
