@@ -748,6 +748,15 @@
   <!-- DASHBOARD -->
   <section id="screen-home" class="screen active">
     <div style="margin-bottom:14px;" id="streakBadge"></div>
+    <div class="card dash-card" onclick="switchScreen('chat')">
+      <div class="card-title">Coach Insight <span class="dash-card-hint">Tap to chat →</span></div>
+      <div class="coach-insight">
+        <div class="coach-avatar" id="dashCoachAvatar">M</div>
+        <div>
+          <div class="coach-text" id="dashCoachInsight"></div>
+        </div>
+      </div>
+    </div>
     <div class="card dash-card" onclick="switchScreen('food')" id="dashCalorieCard"></div>
     <div class="card dash-card" onclick="switchScreen('food')" id="dashMacrosCard"></div>
     <div class="card dash-card" onclick="switchScreen('weight')">
@@ -765,15 +774,6 @@
       <div class="chart-canvas-wrap"><canvas id="weightMiniChart"></canvas></div>
     </div>
     <div class="card dash-card" onclick="switchScreen('workouts')" id="dashWorkoutCard"></div>
-    <div class="card dash-card" onclick="switchScreen('chat')">
-      <div class="card-title">Coach Insight <span class="dash-card-hint">Tap to chat →</span></div>
-      <div class="coach-insight">
-        <div class="coach-avatar" id="dashCoachAvatar">M</div>
-        <div>
-          <div class="coach-text" id="dashCoachInsight"></div>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- LOG FOOD -->
