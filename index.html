@@ -2160,13 +2160,26 @@ function logWeight() {
   if (!w) return;
   const note = document.getElementById('weightNote').value;
   const targetDate = weightViewDate;
+  console.log('[Weight] Logging', w, 'lbs for', targetDate, 'note:', note);
   const existing = weights.findIndex(e => e.date === targetDate);
-  if (existing >= 0) { weights[existing] = { date: targetDate, weight: w, note }; }
-  else { weights.push({ date: targetDate, weight: w, note }); weights.sort((a,b) => a.date.localeCompare(b.date)); }
-  save(); renderAll();
+  if (existing >= 0) {
+    weights[existing] = { date: targetDate, weight: w, note };
+    console.log('[Weight] Updated existing entry at index', existing);
+  } else {
+    weights.push({ date: targetDate, weight: w, note });
+    weights.sort((a,b) => a.date.localeCompare(b.date));
+    console.log('[Weight] Added new entry, total entries:', weights.length);
+  }
+  console.log('[Weight] All weights:', JSON.stringify(weights));
+  save();
+  renderAll();
 }
 
 function editWeightEntry(date) {
+  // Navigate to that date instead of opening a modal
+  weightViewDate = date;
+  renderWeightScreen();
+  return;
   const entry = weights.find(w => w.date === date);
   if (!entry) return;
   document.getElementById('settingsEditTitle').innerHTML = `Edit Weight — ${formatDate(date)} <button class="modal-close" onclick="closeModal('settingsEditModal')">&times;</button>`;
