@@ -785,6 +785,12 @@
       <div class="chart-canvas-wrap"><canvas id="weightMiniChart"></canvas></div>
     </div>
     <div class="card dash-card" onclick="switchScreen('workouts')" id="dashWorkoutCard"></div>
+    <div class="card">
+      <div class="card-title">Trends</div>
+      <div class="time-tabs" id="trendTimeTabs"><button class="time-tab active" onclick="setTrendRange('1W')">1W</button><button class="time-tab" onclick="setTrendRange('1M')">1M</button></div>
+      <div style="margin-bottom:16px;"><div style="font-size:0.82rem;font-weight:600;margin-bottom:6px;">Calories In vs Out</div><div class="chart-canvas-wrap" style="height:140px;"><canvas id="caloriesTrendChart"></canvas></div></div>
+      <div><div style="font-size:0.82rem;font-weight:600;margin-bottom:6px;">Daily Macros</div><div class="chart-canvas-wrap" style="height:140px;"><canvas id="macrosTrendChart"></canvas></div></div>
+    </div>
   </section>
 
   <!-- LOG FOOD -->
@@ -1709,6 +1715,147 @@ function renderDashboard() {
   generateDailyInsight(t, goal, burn, remaining);
 
   drawWeightChart('weightMiniChart', 160);
+  drawTrendCharts();
+}
+
+let trendRange = '1W';
+function setTrendRange(range) {
+  trendRange = range;
+  document.querySelectorAll('#trendTimeTabs .time-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  drawTrendCharts();
+}
+
+function drawTrendCharts() {
+  const days = trendRange === '1M' ? 28 : 7;
+  const dateList = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    dateList.push(d.toISOString().slice(0, 10));
+  }
+
+  // Calories In vs Out chart
+  const calCanvas = document.getElementById('caloriesTrendChart');
+  if (calCanvas && calCanvas.parentElement) {
+    const ctx = calCanvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = calCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width, h = 140;
+    calCanvas.width = w * dpr; calCanvas.height = h * dpr;
+    calCanvas.style.width = w + 'px'; calCanvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+    const pad = { top: 10, right: 10, bottom: 30, left: 40 };
+    const cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
+
+    const calsIn = dateList.map(d => meals.filter(m => m.date === d).reduce((s, m) => s + m.cals, 0));
+    const calsOut = dateList.map(d => {
+      const dayBurn = workouts.filter(wk => wk.date === d).reduce((s, wk) => s + (wk.calsBurned || 0), 0);
+      return settings.calorieGoal + dayBurn; // goal line
+    });
+    const maxVal = Math.max(Math.max(...calsIn, 1), Math.max(...calsOut, 1)) * 1.1;
+    const barW = Math.max(4, cw / dateList.length * 0.35);
+    const xStep = cw / dateList.length;
+
+    // Grid
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 0.5;
+    for (let v = 0; v <= maxVal; v += 500) {
+      const y = pad.top + ch - (v / maxVal) * ch;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+      ctx.fillStyle = '#737373'; ctx.font = '9px Inter'; ctx.textAlign = 'right';
+      ctx.fillText(v, pad.left - 4, y + 3);
+    }
+    // Bars
+    dateList.forEach((d, i) => {
+      const x = pad.left + i * xStep + xStep / 2;
+      const hIn = (calsIn[i] / maxVal) * ch;
+      ctx.fillStyle = 'rgba(245,158,11,0.8)';
+      ctx.fillRect(x - barW, pad.top + ch - hIn, barW, hIn);
+      // Goal line dot
+      const goalY = pad.top + ch - (calsOut[i] / maxVal) * ch;
+      ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(x, goalY, 3, 0, Math.PI * 2); ctx.fill();
+    });
+    // Goal line
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath();
+    dateList.forEach((d, i) => {
+      const x = pad.left + i * xStep + xStep / 2;
+      const y = pad.top + ch - (calsOut[i] / maxVal) * ch;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    // X labels
+    const maxLabels = Math.floor(cw / 36);
+    const lStep = Math.max(1, Math.ceil(dateList.length / maxLabels));
+    ctx.fillStyle = '#737373'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    dateList.forEach((d, i) => {
+      if (i % lStep === 0 || i === dateList.length - 1) {
+        const x = pad.left + i * xStep + xStep / 2;
+        ctx.fillText(new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), x, h - 4);
+      }
+    });
+    // Legend
+    ctx.fillStyle = 'rgba(245,158,11,0.8)'; ctx.fillRect(pad.left, h - 14, 8, 8);
+    ctx.fillStyle = '#737373'; ctx.font = '8px Inter'; ctx.textAlign = 'left';
+    ctx.fillText('Eaten', pad.left + 12, h - 7);
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(pad.left + 50, h - 14, 8, 8);
+    ctx.fillStyle = '#737373'; ctx.fillText('Goal', pad.left + 62, h - 7);
+  }
+
+  // Macros chart (stacked bars)
+  const macroCanvas = document.getElementById('macrosTrendChart');
+  if (macroCanvas && macroCanvas.parentElement) {
+    const ctx = macroCanvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = macroCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width, h = 140;
+    macroCanvas.width = w * dpr; macroCanvas.height = h * dpr;
+    macroCanvas.style.width = w + 'px'; macroCanvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+    const pad = { top: 10, right: 10, bottom: 30, left: 40 };
+    const cw2 = w - pad.left - pad.right, ch2 = h - pad.top - pad.bottom;
+
+    const pData = dateList.map(d => meals.filter(m => m.date === d).reduce((s, m) => s + m.protein, 0));
+    const cData = dateList.map(d => meals.filter(m => m.date === d).reduce((s, m) => s + m.carbs, 0));
+    const fData = dateList.map(d => meals.filter(m => m.date === d).reduce((s, m) => s + m.fat, 0));
+    const totals = dateList.map((_, i) => pData[i] + cData[i] + fData[i]);
+    const maxG = Math.max(...totals, 1) * 1.1;
+    const barW = Math.max(6, cw2 / dateList.length * 0.5);
+    const xStep = cw2 / dateList.length;
+
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 0.5;
+    for (let v = 0; v <= maxG; v += 50) {
+      const y = pad.top + ch2 - (v / maxG) * ch2;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+      ctx.fillStyle = '#737373'; ctx.font = '9px Inter'; ctx.textAlign = 'right';
+      ctx.fillText(v + 'g', pad.left - 4, y + 3);
+    }
+    dateList.forEach((d, i) => {
+      const x = pad.left + i * xStep + xStep / 2 - barW / 2;
+      let yOff = pad.top + ch2;
+      [[pData[i], '#22c55e'], [cData[i], '#3b82f6'], [fData[i], '#ef4444']].forEach(([val, col]) => {
+        const bh = (val / maxG) * ch2;
+        yOff -= bh;
+        ctx.fillStyle = col; ctx.fillRect(x, yOff, barW, bh);
+      });
+    });
+    // X labels
+    const maxLabels = Math.floor(cw2 / 36);
+    const lStep = Math.max(1, Math.ceil(dateList.length / maxLabels));
+    ctx.fillStyle = '#737373'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    dateList.forEach((d, i) => {
+      if (i % lStep === 0 || i === dateList.length - 1) {
+        const x = pad.left + i * xStep + xStep / 2;
+        ctx.fillText(new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), x, h - 4);
+      }
+    });
+    // Legend
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(pad.left, h - 14, 8, 8);
+    ctx.fillStyle = '#737373'; ctx.font = '8px Inter'; ctx.textAlign = 'left';
+    ctx.fillText('P', pad.left + 11, h - 7);
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(pad.left + 24, h - 14, 8, 8);
+    ctx.fillStyle = '#737373'; ctx.fillText('C', pad.left + 35, h - 7);
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(pad.left + 48, h - 14, 8, 8);
+    ctx.fillStyle = '#737373'; ctx.fillText('F', pad.left + 59, h - 7);
+  }
 }
 
 function renderFoodLog() {
